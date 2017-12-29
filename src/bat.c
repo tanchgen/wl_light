@@ -30,7 +30,6 @@ void batInit(void){
 
   // Прерывание по окончанию преобразования
   ADC1->IER = ADC_IER_EOSIE;
-
   NVIC_EnableIRQ(ADC1_COMP_IRQn);
   NVIC_SetPriority(ADC1_COMP_IRQn,3);
 

@@ -48,8 +48,6 @@ volatile tSensData sensData;    // Структура измеряемых да�
 volatile eState state;          // Состояние машины
 volatile tFlags flags;          // Флаги состояний системы
 
-uint16_t t = 0;
-
 uint32_t GPIOA_MODER;
 uint32_t GPIOB_MODER;
 uint32_t GPIOC_MODER;
@@ -74,6 +72,7 @@ int main(int argc, char* argv[])
 {
   (void)argc;
   (void)argv;
+  uint8_t msgCount = 0;
   // Send a greeting to the trace device (skipped on Release).
 //  trace_puts("Hello ARM World!");
 
@@ -87,30 +86,62 @@ int main(int argc, char* argv[])
   eepromUnlock();
 
   pwrInit();
-#if 0
   rfmInit();
+  batInit();
   tmp75Init();
-  tmp75Stop();
 
+#if 1
+  // Прерывание по окончанию преобразования
+  ADC1->IER &= ~ADC_IER_EOSIE;
+
+  NVIC_DisableIRQ(ADC1_COMP_IRQn);
+
+  // Запускаем измерение напряжения батареи
+  batStart();
   // Тестируем потребление TMP75
   tmp75Start();
   mDelay(30);
-  t = tmp75ToRead();
-  uint8_t regAddr = TMP75_REG_CFG;
+  sensData.temp = tmp75ToRead();
+//  uint8_t regAddr = TMP75_REG_CFG;
 
   // Отправляем 1 байт без autoend
-  t = tmp75RegRead( regAddr );
+//  t = tmp75RegRead( regAddr );
+  if( (ADC1->ISR & ADC_ISR_EOS) == ADC_ISR_EOS ){
+    uint32_t vrefCal = *((uint16_t *)0x1FF80078);
+    uint32_t vref = ADC1->DR;
+  	// Выключаем внутренний регулятор напряжения
+    ADC1->CR |= ADC_CR_ADDIS;
+    ADC1->CR &= ~ADC_CR_ADVREGEN;
 
+    // Пересчет: X (мВ) / 10 - 150 = Y * 0.01В. Например: 3600мВ = 210ед, 2000мВ = 50ед
+    sensData.bat = (uint8_t)(((3000L * vrefCal)/vref)/10 - 150);
+//    deepSleepOn();
+    flags.batCplt = TRUE;
+    // Не пара ли передавать данные серверу?
+//    dataSendTry();
+  }
+  // Стираем
+  ADC1->ISR |= 0xFF; //ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP;
+
+  // ---- Формируем пакет данных -----
+	pkt.paySensType = SENS_TYPE_TO;
+  pkt.paySrcNode = rfm.nodeAddr;
+  pkt.payMsgNum = msgCount++;
+  pkt.payBat = sensData.bat;
+  pkt.payVolume = sensData.temp;
+
+  // Передаем заполненую при измерении запись
+  pkt.nodeAddr = BCRT_ADDR;
+  // Длина payload = 1(nodeAddr) + 1(sensType) + 1(msgCount) + 1(bat) + 2(temp)
+  pkt.payLen = sizeof(tSensMsg);
+#endif
+
+#if 0
 
   timeInit();
 
   // Запустили измерения
   mesureStart();
-#endif
-  /* Initialize all configured peripherals */
-  batInit();
-  // Запускаем измерение напряжения батареи
-  batStart();
 
 //  rfmSetMode_s( REG_OPMODE_SLEEP );
 
@@ -119,15 +150,22 @@ int main(int argc, char* argv[])
 
   while(flags.batCplt != TRUE)
   {}
+
   saveContext();
   SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;
   __WFI();
   restoreContext();
+#endif
+
   // Infinite loop
   while (1){
   	GPIOB->ODR ^= GPIO_Pin_3;
-    mDelay(200);
 
+  	// Тестовая отправка пакетов
+    rfmTransmit_s( &pkt );
+    rfmSetMode_s( REG_OPMODE_SLEEP );
+
+    mDelay(10000);
 
     // !!! Дебажим  регистры !!!
 //    rfmSetMode_s( REG_OPMODE_STDBY );

@@ -257,8 +257,8 @@ typedef struct {
 } __packed tTimeMsg;
 
 typedef struct {
-	uint8_t cmd;				//
   uint8_t srcNode;    // Адрес отправителя
+	uint8_t sensType;		// Тип конечного устройства
   uint8_t msgNum;     // Номер пакета
   uint8_t batVolt;    // Напряжение батареи питания
   uint16_t Volume;    // Значение сенсора
@@ -288,6 +288,7 @@ typedef struct {
 #define paySrcNode   payLoad.sensMsg.srcNode
 #define payMsgNum    payLoad.sensMsg.msgNum
 #define payBat       payLoad.sensMsg.batVolt
+#define paySensType  payLoad.sensMsg.sensType
 #define payVolume    payLoad.sensMsg.Volume
 
 //  uint8_t bufLen;       // Длина приемного буфера

@@ -330,7 +330,7 @@ static inline void rfDataInit( void ){
 static inline void rfmRegSetup( void ){
   //  Усыпляем радиомодуль
   rfmRegWrite( REG_OPMODE,  REG_OPMODE_SLEEP );
-  while( (rfmRegRead(REG_OPMODE) & REG_OPMODE_SLEEP) != REG_OPMODE_SLEEP)
+  while( (rfmRegRead(REG_FLAG1) & REG_IF1_MODEREADY) != REG_IF1_MODEREADY)
   {}
 
   // Калибровка RC-генратора

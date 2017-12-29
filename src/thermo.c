@@ -62,6 +62,7 @@ static inline void i2cInit( void ){
 void tmp75Init( void ){
   i2cGpioInit();
   i2cInit();
+  tmp75Stop();
 }
 
 void tmp75Stop( void ){
@@ -72,7 +73,7 @@ void tmp75Stop( void ){
 	dbgTime.thermoStart = mTick;
 #endif // DEBUG_TIME
 
-  // Отправляем команду начать измерение
+  // Отправляем команду
   // Настройки термодатчика
   tmp75CfgWrite( cfg );
   // Выключаем I2C
