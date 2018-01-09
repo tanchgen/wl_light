@@ -28,10 +28,12 @@ void batInit(void){
 
   ADC->CCR |= ADC_CCR_VREFEN;
 
+#if 0 // Измерения проводим в блокирующем режиме
   // Прерывание по окончанию преобразования
   ADC1->IER = ADC_IER_EOSIE;
   NVIC_EnableIRQ(ADC1_COMP_IRQn);
   NVIC_SetPriority(ADC1_COMP_IRQn,3);
+#endif
 
   ADC1->CR |= ADC_CR_ADDIS;
 
@@ -67,3 +69,22 @@ void batStart( void ){
   ADC1->CR |= ADC_CR_ADSTART;
 }
 
+void batEnd( void ){
+	// Ждем окончания преобразования
+  while( (ADC1->ISR & ADC_ISR_EOS) != ADC_ISR_EOS )
+  {}
+
+  uint32_t vrefCal = *((uint16_t *)0x1FF80078);
+  uint32_t vref = ADC1->DR;
+  // Выключаем внутренний регулятор напряжения
+  ADC1->CR |= ADC_CR_ADDIS;
+  ADC1->CR &= ~ADC_CR_ADVREGEN;
+
+	// Пересчет: X (мВ) / 10 - 150 = Y * 0.01В. Например: 3600мВ = 210ед, 2000мВ = 50ед
+	sensData.bat = (uint8_t)(((3000L * vrefCal)/vref)/10 - 150);
+	flags.batCplt = TRUE;
+	// Не пара ли передавать данные серверу?
+	dataSendTry();
+  // Стираем флаги
+  ADC1->ISR |= 0xFF; //ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP;
+}

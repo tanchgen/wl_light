@@ -48,6 +48,7 @@ volatile tSensData sensData;    // Структура измеряемых да�
 volatile eState state;          // Состояние машины
 volatile tFlags flags;          // Флаги состояний системы
 
+static uint32_t contextCount = 1; // Счетчик восстановления и сохранения состояния GPIO перед остановом
 uint32_t GPIOA_MODER;
 uint32_t GPIOB_MODER;
 uint32_t GPIOC_MODER;
@@ -87,14 +88,10 @@ int main(int argc, char* argv[])
 
   pwrInit();
   rfmInit();
-  batInit();
   tmp75Init();
+  batInit();
 
-#if 1
-  // Прерывание по окончанию преобразования
-  ADC1->IER &= ~ADC_IER_EOSIE;
-
-  NVIC_DisableIRQ(ADC1_COMP_IRQn);
+#if 0
 
   // Запускаем измерение напряжения батареи
   batStart();
@@ -106,22 +103,9 @@ int main(int argc, char* argv[])
 
   // Отправляем 1 байт без autoend
 //  t = tmp75RegRead( regAddr );
-  if( (ADC1->ISR & ADC_ISR_EOS) == ADC_ISR_EOS ){
-    uint32_t vrefCal = *((uint16_t *)0x1FF80078);
-    uint32_t vref = ADC1->DR;
-  	// Выключаем внутренний регулятор напряжения
-    ADC1->CR |= ADC_CR_ADDIS;
-    ADC1->CR &= ~ADC_CR_ADVREGEN;
 
-    // Пересчет: X (мВ) / 10 - 150 = Y * 0.01В. Например: 3600мВ = 210ед, 2000мВ = 50ед
-    sensData.bat = (uint8_t)(((3000L * vrefCal)/vref)/10 - 150);
-//    deepSleepOn();
-    flags.batCplt = TRUE;
-    // Не пара ли передавать данные серверу?
-//    dataSendTry();
-  }
-  // Стираем
-  ADC1->ISR |= 0xFF; //ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP;
+  // Заканчиваем измерение напряжения
+  batEnd();
 
   // ---- Формируем пакет данных -----
 	pkt.paySensType = SENS_TYPE_TO;
@@ -136,27 +120,26 @@ int main(int argc, char* argv[])
   pkt.payLen = sizeof(tSensMsg);
 #endif
 
-#if 0
+#if 1
 
   timeInit();
 
   // Запустили измерения
   mesureStart();
 
-//  rfmSetMode_s( REG_OPMODE_SLEEP );
 
 //  GPIOB->MODER = (GPIOB->MODER & ~GPIO_MODER_MODE3) | GPIO_MODER_MODE3_0;
 
-
-  while(flags.batCplt != TRUE)
-  {}
-
-  saveContext();
-  SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;
-  __WFI();
-  restoreContext();
 #endif
 
+//  rfmSetMode_s( REG_OPMODE_SLEEP );
+  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;// | SCB_SCR_SLEEPONEXIT_Msk;
+  saveContext();
+  while(1){
+//  	saveContext();
+//  	__WFI();
+//  	restoreContext();
+  }
   // Infinite loop
   while (1){
   	GPIOB->ODR ^= GPIO_Pin_3;
@@ -181,6 +164,8 @@ static inline void mainInit( void ){
   // Power registry ON
   RCC->APB1ENR |= (RCC_APB1ENR_PWREN);
   FLASH->ACR |= FLASH_ACR_PRE_READ;
+  // Выключаем перрывание EXTI от I2C1, USART1
+  EXTI->IMR &= ~(EXTI_IMR_IM23 | EXTI_IMR_IM25);
 }
 
 
@@ -207,7 +192,7 @@ static inline void pwrInit( void ){
   // MSI clock wakeup enable
   RCC->CFGR &= ~RCC_CFGR_STOPWUCK;
   // Interrupt-only Wakeup, DeepSleep enable, SleepOnExit enable
-  SCB->SCR = (SCB->SCR & ~SCB_SCR_SEVONPEND_Msk) | SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk;
+  SCB->SCR = (SCB->SCR & ~SCB_SCR_SEVONPEND_Msk);// | SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk;
 
   // Выключаем VREFIN при остановке + Быстрое просыпание:
   // не ждем, пока восстановится VREFIN, проверяем только при запуске АЦП
@@ -238,33 +223,24 @@ static inline void eepromUnlock( void ){
 * Date:         09-23-16
 *******************************************************************************/
 void restoreContext(void){
-	char was_waiting = 0;
-
 	// disable interrupts if they weren't already disabled
-	if ( __get_PRIMASK() )
-	{
-		was_waiting = 1;
+	__disable_irq();
+	// Увеличиваем счетчик восстановления сонтекста
+	contextCount++;
+	if(contextCount == 1){
+		// Это первое восстановление состояния после Останова
+		// Enable GPIO clocks
+		RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOCEN;
+
+		GPIOA->MODER = GPIOA_MODER; // dummy write
+
+		// Restore the previous mode of the I/O pins
+		GPIOA->MODER = GPIOA_MODER;
+		GPIOB->MODER = GPIOB_MODER;
+		GPIOC->MODER = GPIOC_MODER;
 	}
-	else
-	{
-		__disable_irq();
-	}
-
-  // Enable GPIO clocks
-	RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOCEN;
-
-	GPIOA->MODER = GPIOA_MODER; // dummy write
-
-	// Restore the previous mode of the I/O pins
-  GPIOA->MODER = GPIOA_MODER;
-  GPIOB->MODER = GPIOB_MODER;
-  GPIOC->MODER = GPIOC_MODER;
-
 	// enable interrupts if they were enabled before this function was called
-	if ( !was_waiting )
-	{
-		__enable_irq();
-	}
+	__enable_irq();
 }
 
 
@@ -282,49 +258,39 @@ void restoreContext(void){
 *               disabled when this function was called.
 * Date:         09-23-16
 *******************************************************************************/
-void saveContext(void)
-{
-	char was_waiting = 0;
+void saveContext(void){
 
-	// disable interrupts if they weren't already disabled
-	if ( __get_PRIMASK() )
-	{
-		was_waiting = 1;
+	// disable interrupts
+	__disable_irq();
+	contextCount--;
+	if( contextCount == 0){
+		// Это последнее попытка сохранить состояние перед Остановом
+
+		// Enable GPIO clocks
+		RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOCEN;
+
+		GPIOA_MODER = GPIOA->MODER;  // dummy read
+
+		// Save the current mode of the I/O pins
+		GPIOA_MODER = GPIOA->MODER;
+		GPIOB_MODER = GPIOB->MODER;
+		GPIOC_MODER = GPIOC->MODER;
+
+		// Configure GPIO port pins in Analog Input mode
+		// PA0 - DIO0 interrupt
+		GPIOA->MODER = 0xEBFF30FF;
+		GPIOB->MODER = 0xFFFFFFFF;
+		// PC14, PC15 - OSC32
+		GPIOC->MODER |= 0x3FFFFFFF;
+
+		// Leave the external interrupts alone!
+		GPIOC->MODER &= ~( GPIO_MODER_MODE13 ); // Input mode
+		GPIOA->MODER &= ~( GPIO_MODER_MODE0 );
+
+		// Disable GPIO clocks
+		RCC->IOPENR &= ~( RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOCEN );
 	}
-	else
-	{
-		__disable_irq();
-	}
-
-  // Enable GPIO clocks
-	RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOCEN;
-
-	GPIOA_MODER = GPIOA->MODER;  // dummy read
-
-	// Save the current mode of the I/O pins
-  GPIOA_MODER = GPIOA->MODER;
-  GPIOB_MODER = GPIOB->MODER;
-  GPIOC_MODER = GPIOC->MODER;
-
-  // Configure GPIO port pins in Analog Input mode
-  // PA0 - DIO0 interrupt
-	GPIOA->MODER = 0xFFFFFFFC;
-  GPIOB->MODER = 0xFFFFFFFF;
-  // PC14, PC15 - OSC32
-  GPIOC->MODER |= 0x3FFFFFFF;
-
-	// Leave the external interrupts alone!
-	GPIOC->MODER &= ~( GPIO_MODER_MODE13 ); // Input mode
-	GPIOA->MODER &= ~( GPIO_MODER_MODE0 );
-
-	// Disable GPIO clocks
-	RCC->IOPENR &= ~( RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOCEN );
-
-	// enable interrupts if they were enabled before this function was called
-	if ( !was_waiting )
-	{
-		__enable_irq();
-	}
+	__enable_irq();
 }
 
 

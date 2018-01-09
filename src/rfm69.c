@@ -116,20 +116,25 @@ void rfmFreqSet( uint32_t freq ){
 
 
 // Переключение рабочего режима с блокировкой
+// Только для режима ListenOff
 void rfmSetMode_s( uint8_t mode ){
 	uint8_t rc;
   uint8_t nowMode;
 
-  nowMode = rfmRegRead( REG_OPMODE );
-  nowMode &= ~(REG_OPMODE_MODE);
-  nowMode |= mode;
-  rfmRegWrite( REG_OPMODE, nowMode );
+	__disable_irq();
 
-  // Проверяем/ждем что режим включился
+	if( rfm.mode == (mode >> 2) ){
+  	goto exit;
+  }
+  rfmRegWrite( REG_OPMODE, mode );
+
   while( (rc = dioRead(DIO_MODEREADY)) == 0 )
   {}
 
   rfm.mode = mode >> 2;
+exit:
+  __enable_irq();
+	return;
 }
 
 // Салибровка RC-генератора

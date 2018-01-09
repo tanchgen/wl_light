@@ -66,7 +66,7 @@ void tmp75Init( void ){
 }
 
 void tmp75Stop( void ){
-  const uint8_t cfg = TMP75_REG_ACCUR | TMP75_SD;
+  const uint8_t cfg = TMP75_REG_ACCUR | TMP75_SD; // | TMP75_TM;
 
   // Отмечаем запуск измерения
 #if DEBUG_TIME

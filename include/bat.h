@@ -10,5 +10,6 @@
 
 void batInit( void );
 void batStart( void );
+void batEnd( void );
 
 #endif /* ADC_H_ */

@@ -123,6 +123,9 @@ void ADC1_COMP_IRQHandler(void){
 * @brief This function handles RTC global interrupt through EXTI lines 17, 19 and 20 and LSE CSS interrupt through EXTI line 19.
 */
 void RTC_IRQHandler(void){
+// Восстанавливаем настройки портов
+
+  restoreContext();
   // Отмечаем запуск MCU
 #if DEBUG_TIME
 	dbgTime.mcuStart = mTick;
@@ -133,8 +136,8 @@ void RTC_IRQHandler(void){
     // Wake-Up timer interrupt
     //Clear WUTF
     // Write access for RTC registers
-	RTC->WPR = 0xCA;
-	RTC->WPR = 0x53;
+  	RTC->WPR = 0xCA;
+  	RTC->WPR = 0x53;
 	  // Останавливаем WakeUp Таймер
 	  RTC->CR &= ~RTC_CR_WUTE;
 	  while((RTC->ISR & RTC_ISR_WUTWF) != RTC_ISR_WUTWF)
@@ -146,6 +149,8 @@ void RTC_IRQHandler(void){
     RTC->WPR = 0xFE;
     RTC->WPR = 0x64;
     wutIrqHandler();
+    // Стираем флаг прерывания EXTI
+    EXTI->PR |= EXTI_PR_PR20;
   }
   if( RTC->ISR & RTC_ISR_ALRAF ){
     // Alarm A interrupt
@@ -155,14 +160,22 @@ void RTC_IRQHandler(void){
     if(state == STAT_READY){
       mesureStart();
     }
+    // Стираем флаг прерывания EXTI
+    EXTI->PR |= EXTI_PR_PR17;
   }
-  EXTI->PR |= EXTI_PR_PR17;
 
   // Отмечаем Останов MCU
 #if DEBUG_TIME
 	dbgTime.mcuEnd = mTick;
 #endif // DEBUG_TIME
 
+	// Проверяем на наличие прерывания EXTI
+	if(EXTI->PR != 0){
+		uint8_t tmp = EXTI->PR;
+		EXTI->PR = tmp;
+	}
+	// Сохраняем настройки портов
+	saveContext();
 }
 
 /**
@@ -170,6 +183,9 @@ void RTC_IRQHandler(void){
 */
 void EXTI0_1_IRQHandler(void)
 {
+	// Восстанавливаем настройки портов
+  restoreContext();
+
 	EXTI->PR |= DIO0_PIN;
   if( rfm.mode == MODE_RX ){
     // Если что-то и приняли, то случайно
@@ -180,7 +196,7 @@ void EXTI0_1_IRQHandler(void)
   }
   else if( rfm.mode == MODE_TX ) {
     // Отправили пакет с температурой
-	state = STAT_READY;
+  	state = STAT_READY;
   }
   // Выключаем RFM69
   rfmSetMode_s( REG_OPMODE_SLEEP );
@@ -189,12 +205,17 @@ void EXTI0_1_IRQHandler(void)
 	dbgTime.rfmTxEnd = mTick;
 #endif // DEBUG_TIME
 
+	// Сохраняем настройки портов
+	saveContext();
 }
 
 // Прерывание по PA3 - DIO3 RSSI
 // Канал кем-то занят
 void EXTI2_3_IRQHandler( void ){
   tUxTime timeNow;
+
+  // Восстанавливаем настройки портов
+  restoreContext();
 
   // Выключаем прерывание от DIO3 (RSSI)
   EXTI->PR |= DIO3_PIN;
@@ -218,6 +239,9 @@ void EXTI2_3_IRQHandler( void ){
   }
   // Можно еще попытатся - выждем паузу
   csmaPause();
+
+	// Сохраняем настройки портов
+	saveContext();
 }
 
 
