@@ -266,6 +266,7 @@ static inline void dioInit( void ){
 
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
   RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
   //---- Инициализация выводов для RFM_RST: Выход, 400кГц, ОК, без подтяжки ---
   RFM_RST_PORT->OSPEEDR &= ~(0x3 << (RFM_RST_PIN_NUM * 2));
@@ -303,10 +304,10 @@ static inline void dioInit( void ){
   EXTI->RTSR |= (DIO0_PIN | DIO3_PIN );
   // ----------- Configure NVIC for Extended Interrupt --------
   NVIC_EnableIRQ( DIO0_EXTI_IRQn );
-  NVIC_SetPriority( DIO0_EXTI_IRQn, 2 );
+  NVIC_SetPriority( DIO0_EXTI_IRQn, 1 );
 
   NVIC_EnableIRQ( DIO3_EXTI_IRQn );
-  NVIC_SetPriority( DIO3_EXTI_IRQn, 2 );
+  NVIC_SetPriority( DIO3_EXTI_IRQn, 1 );
 
 }
 

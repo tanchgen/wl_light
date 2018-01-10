@@ -15,7 +15,7 @@
 void batInit(void){
 
   // Вкл тактирование АЦП
-  RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SYSCFGEN;
+  RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;// | RCC_APB2ENR_SYSCFGEN;
 
   // Конфигурация АЦП
   ADC1->CFGR2 |= LL_ADC_CLOCK_SYNC_PCLK_DIV1;
@@ -51,10 +51,11 @@ void batInit(void){
 
 	// Выключаем внутренний регулятор напряжения
   ADC1->CR &= ~ADC_CR_ADVREGEN;
-
+  RCC->APB2ENR &= ~RCC_APB2ENR_ADC1EN;
 }
 
 void batStart( void ){
+	RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
   // Опять включаем АЦП после калибровки
   ADC1->CR |= ADC_CR_ADEN;
 
@@ -87,4 +88,5 @@ void batEnd( void ){
 	dataSendTry();
   // Стираем флаги
   ADC1->ISR |= 0xFF; //ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP;
+	RCC->APB2ENR &= ~RCC_APB2ENR_ADCEN;
 }

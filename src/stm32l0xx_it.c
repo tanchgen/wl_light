@@ -1,35 +1,3 @@
-/**
-  ******************************************************************************
-  * @file    stm32l0xx_it.c
-  * @brief   Interrupt Service Routines.
-  ******************************************************************************
-  *
-  * COPYRIGHT(c) 2017 STMicroelectronics
-  *
-  * Redistribution and use in source and binary forms, with or without modification,
-  * are permitted provided that the following conditions are met:
-  *   1. Redistributions of source code must retain the above copyright notice,
-  *      this list of conditions and the following disclaimer.
-  *   2. Redistributions in binary form must reproduce the above copyright notice,
-  *      this list of conditions and the following disclaimer in the documentation
-  *      and/or other materials provided with the distribution.
-  *   3. Neither the name of STMicroelectronics nor the names of its contributors
-  *      may be used to endorse or promote products derived from this software
-  *      without specific prior written permission.
-  *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  ******************************************************************************
-  */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l0xx.h"
 
@@ -47,45 +15,23 @@ extern uint8_t regBuf[];
 /*            Cortex-M0+ Processor Interruption and Exception Handlers         */ 
 /******************************************************************************/
 
-/**
-* @brief This function handles Non maskable Interrupt.
-*/
 void NMI_Handler(void){
 }
 
-/**
-* @brief This function handles Hard fault interrupt.
-*/
 void HardFault_Handler(void){
   while (1)
   {}
 }
 
-/**
-* @brief This function handles System service call via SWI instruction.
-*/
 void SVC_Handler(void){
 }
 
-/**
-* @brief This function handles Pendable request for system service.
-*/
 void PendSV_Handler(void){
 }
 
-/**
-* @brief This function handles System tick timer.
-*/
 void SysTick_Handler(void) {
 //  mTick++;
 }
-
-/******************************************************************************/
-/* STM32L0xx Peripheral Interrupt Handlers                                    */
-/* Add here the Interrupt Handlers for the used peripherals.                  */
-/* For the available peripheral interrupt handler names,                      */
-/* please refer to the startup file (startup_stm32l0xx.s).                    */
-/******************************************************************************/
 
 void ADC1_COMP_IRQHandler(void){
   if( (ADC1->ISR & ADC_ISR_EOS) == 0 ){
@@ -120,7 +66,7 @@ void ADC1_COMP_IRQHandler(void){
 
 
 /**
-* @brief This function handles RTC global interrupt through EXTI lines 17, 19 and 20 and LSE CSS interrupt through EXTI line 19.
+* RTC global interrupt through EXTI lines 17, 19 and 20.
 */
 void RTC_IRQHandler(void){
 // Восстанавливаем настройки портов
@@ -130,7 +76,6 @@ void RTC_IRQHandler(void){
 #if DEBUG_TIME
 	dbgTime.mcuStart = mTick;
 #endif // DEBUG_TIME
-
 
   if( RTC->ISR & RTC_ISR_WUTF ){
     // Wake-Up timer interrupt
@@ -174,6 +119,10 @@ void RTC_IRQHandler(void){
 		uint8_t tmp = EXTI->PR;
 		EXTI->PR = tmp;
 	}
+  // Стираем PWR_CR_WUF
+  PWR->CR |= PWR_CR_CWUF;
+  while( (PWR->CSR & PWR_CSR_WUF) != 0)
+  {}
 	// Сохраняем настройки портов
 	saveContext();
 }
@@ -196,6 +145,7 @@ void EXTI0_1_IRQHandler(void)
   }
   else if( rfm.mode == MODE_TX ) {
     // Отправили пакет с температурой
+  	wutStop();
   	state = STAT_READY;
   }
   // Выключаем RFM69
@@ -235,16 +185,18 @@ void EXTI2_3_IRQHandler( void ){
     // Время на попытки отправить данные вышло - все бросаем до следующего раза
     wutStop();
     state = STAT_READY;
-    return;
   }
-  // Можно еще попытатся - выждем паузу
-  csmaPause();
+  else {
+  	// Можно еще попытатся - выждем паузу
+  	csmaPause();
+  }
 
 	// Сохраняем настройки портов
 	saveContext();
+  return;
 }
 
-
+#if 0
 /**
 * @brief This function handles I2C1 event global interrupt / I2C1 wake-up interrupt through EXTI line 23.
 */
@@ -252,6 +204,4 @@ void I2C1_IRQHandler(void) {
   // Обработка прерывания I2C: работа с термодатчиком
   thermoIrqHandler();
 }
-
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+#endif

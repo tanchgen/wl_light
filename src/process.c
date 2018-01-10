@@ -96,6 +96,8 @@ int8_t dataSendTry( void ){
       // Запоминаем время остановки попыток отправки - пробуем не более 1-2 секунды
       sendTryStopTime = getRtcTime() + 1;
       csmaRun();
+      state = STAT_TX_START;
+
     }
     else {
     	state = STAT_READY;

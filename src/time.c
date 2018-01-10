@@ -72,7 +72,7 @@ void rtcInit(void){
   // частота = RTCCLOCK (32768кГц) / 2: T = ~61.05мкс
   RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | RTC_CR_WUCKSEL_1 | RTC_CR_WUCKSEL_0 | RTC_CR_WUTIE;
   // Disable WUT
-  RTC->CR |= RTC_CR_WUTE;
+  RTC->CR &= ~RTC_CR_WUTE;
 
   // Disable write access
   RTC->WPR = 0xFE;
