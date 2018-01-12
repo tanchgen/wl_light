@@ -69,8 +69,8 @@ void rtcInit(void){
   RTC->CR &= ~RTC_CR_WUTE;
   while((RTC->ISR & RTC_ISR_WUTWF) != RTC_ISR_WUTWF)
   {}
-  // частота = RTCCLOCK (32768кГц) / 2: T = ~61.05мкс
-  RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | RTC_CR_WUCKSEL_1 | RTC_CR_WUCKSEL_0 | RTC_CR_WUTIE;
+  // частота = RTCCLOCK (32768кГц) / 4: T = ~122.07мкс
+  RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | RTC_CR_WUCKSEL_1 | RTC_CR_WUTIE;
   // Disable WUT
   RTC->CR &= ~RTC_CR_WUTE;
 
@@ -459,9 +459,9 @@ void wutSet( uint32_t us ){
   while((RTC->ISR & RTC_ISR_WUTWF) != RTC_ISR_WUTWF)
   {}
   if( us != 0 ){
-    // Вычисляем значение таймера: wukt = (us * (RTCCLOCK / 2))/1000000 + 1
-    // Максимальная погрешность = + 61мкс (при 32768кГц)
-    uint16_t  wukt = (us * (RTCCLOCK / 2) )/1000000L;
+    // Вычисляем значение таймера: wukt = (us * (RTCCLOCK / 4))/1000000 + 1
+    // Максимальная погрешность = + 122.07мкс (при 32768кГц)
+    uint16_t  wukt = (us * (RTCCLOCK / 4) )/1000000L;
     if(wukt == 0){
       wukt++;
     }

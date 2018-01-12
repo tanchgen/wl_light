@@ -119,7 +119,6 @@ void rfmFreqSet( uint32_t freq ){
 // Только для режима ListenOff
 void rfmSetMode_s( uint8_t mode ){
 	uint8_t rc;
-  uint8_t nowMode;
 
 	__disable_irq();
 

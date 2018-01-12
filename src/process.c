@@ -10,7 +10,7 @@
 
 #include "main.h"
 #include "my_time.h"
-#include "thermo.h"
+#include "light.h"
 #include "bat.h"
 #include "rfm69.h"
 #include "process.h"
@@ -26,9 +26,7 @@ void mesureStart( void ){
   // Запускаем измерение напряжения батареи
   batStart();
   // Запускаем измерение температуры
-  tmp75Start();
-  // Устанавливаем время, через которое надо проснутся и запускаем: кратно 28мкс
-  wutSet( 28 * (1 << (TMP75_ACCUR - 9)) );
+  lightStart();
   batEnd();
 }
 
@@ -36,12 +34,12 @@ void wutIrqHandler( void ){
 
   // По какому поводу был включен WUT? - состояние машины
   switch( state ){
-    case STAT_T_MESUR:
+    case STAT_L_MESUR:
       // Пора читать измеренную температуру из датчика
-      thermoRead();
-      flags.thermCplt = TRUE;
-      state = STAT_T_READ;
-    case STAT_T_READ:
+      lightEnd();
+      flags.lightCplt = TRUE;
+      state = STAT_L_READ;
+    case STAT_L_READ:
       // Не пара ли передавать данные серверу?
       dataSendTry();
       break;
@@ -85,12 +83,12 @@ int8_t dataSendTry( void ){
   uint8_t tmrf;
 
   // ------ Надо ли отправлять ? ------------
-  if( flags.batCplt && flags.thermCplt ){
+  if( flags.batCplt && flags.lightCplt ){
     if( ((tmrf = rtc.min % SEND_TOUT) == 0 ) || // Время передачи наступило
-         (((tmp = sensData.temp - sensData.tempPrev) > 0.5) || (tmp < -0.5)) || // За 1 мин температура изменилась более, чем 0.5 гр.С
-         (((tmp = sensData.temp - sensData.tempPrev6) > 1) || (tmp < -1)) ){ // С предыдущей ОЧЕРЕДНОЙ отправки температура изменилась более, чем 1 гр.С
+         (((tmp = sensData.light - sensData.lightPrev) > 0.5) || (tmp < -0.5)) || // За 1 мин температура изменилась более, чем 0.5 гр.С
+         (((tmp = sensData.light - sensData.lightPrev6) > 1) || (tmp < -1)) ){ // С предыдущей ОЧЕРЕДНОЙ отправки температура изменилась более, чем 1 гр.С
       if(tmrf == 0){
-        sensData.tempPrev6 = sensData.temp;
+        sensData.lightPrev6 = sensData.light;
       }
       // Можно отправлять по радиоканалу
       // Запоминаем время остановки попыток отправки - пробуем не более 1-2 секунды
@@ -103,7 +101,7 @@ int8_t dataSendTry( void ){
     	state = STAT_READY;
     }
     // Сохраняем нынешнюю температуру, как предыдущую
-    sensData.tempPrev = sensData.temp;
+    sensData.lightPrev = sensData.light;
   }
 
   return rc;
@@ -153,7 +151,7 @@ static void sensDataSend( void ){
   pkt.paySrcNode = rfm.nodeAddr;
   pkt.payMsgNum = msgNum++;
   pkt.payBat = sensData.bat;
-  pkt.payVolume = sensData.temp;
+  pkt.payVolume = sensData.light;
 
   // Передаем заполненую при измерении запись
   pkt.nodeAddr = BCRT_ADDR;

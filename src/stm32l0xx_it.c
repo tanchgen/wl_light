@@ -1,7 +1,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l0xx.h"
 
-#include "thermo.h"
+#include "light.h"
 #include "main.h"
 #include "process.h"
 #include "rfm69.h"

@@ -33,7 +33,7 @@
 
 #include "my_time.h"
 #include "bat.h"
-#include "thermo.h"
+#include "light.h"
 #include "spi.h"
 #include "rfm69.h"
 #include "process.h"
@@ -88,9 +88,19 @@ int main(int argc, char* argv[])
   eepromUnlock();
 
   rfmInit();
-  tmp75Init();
+  lightInit();
   batInit();
 
+  do{
+		// Запускаем измерение напряжения батареи
+		batStart();
+		// Запускаем измерение температуры
+		lightStart();
+		mDelay(180);
+		batEnd();
+		lightEnd();
+  } while(1);
+#if 0
   timeInit();
 
   // Запустили измерения
@@ -99,6 +109,7 @@ int main(int argc, char* argv[])
   pwrInit();
 //  rfmSetMode_s( REG_OPMODE_SLEEP );
 //  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk;
+#endif
   saveContext();
 //	__WFI();
 	restoreContext();
