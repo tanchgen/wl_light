@@ -3,6 +3,8 @@
 // Includes ------------------------------------------------------------------
 #include "stm32l0xx.h"
 
+#define STOP_EN		0
+
 #ifndef NVIC_PRIORITYGROUP_0
 
 #define NVIC_PRIORITYGROUP_0         ((uint32_t)0x00000007)
@@ -64,8 +66,8 @@ typedef struct  __packed {
 
 typedef struct{
   unsigned int lightErr : 1;
-  unsigned int batCplt : 1;
   unsigned int lightCplt : 1;
+  unsigned int batCplt : 1;
 } tFlags;
 
 //extern volatile uint32_t mTick;

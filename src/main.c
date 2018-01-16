@@ -1,30 +1,3 @@
-/*
- * This file is part of the µOS++ distribution.
- *   (https://github.com/micro-os-plus)
- * Copyright (c) 2014 Liviu Ionescu.
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom
- * the Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
-
 // ----------------------------------------------------------------------------
 
 #include <stdio.h>
@@ -60,6 +33,7 @@ uint32_t GPIOC_MODER;
 tDbgTime dbgTime;
 
 #endif // DEBUG_TIME
+void EXTI2_3_IRQHandler( void );
 
 /* Private function prototypes -----------------------------------------------*/
 static inline void mainInit( void );
@@ -91,6 +65,7 @@ int main(int argc, char* argv[])
   lightInit();
   batInit();
 
+#if 0
   do{
 		// Запускаем измерение напряжения батареи
 		batStart();
@@ -100,19 +75,28 @@ int main(int argc, char* argv[])
 		batEnd();
 		lightEnd();
   } while(1);
-#if 0
+#else
   timeInit();
-
   // Запустили измерения
   mesureStart();
 //  GPIOB->MODER = (GPIOB->MODER & ~GPIO_MODER_MODE3) | GPIO_MODER_MODE3_0;
   pwrInit();
 //  rfmSetMode_s( REG_OPMODE_SLEEP );
 //  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk;
+  // Проверка работы csma
+  for( uint8_t i=0; i < 4; i++ ){
+	while( (state != STAT_RF_CSMA_START) && (state != STAT_RF_CSMA_PAUSE) )
+	{}
+    mDelay(1);
+    EXTI2_3_IRQHandler();
+  }
+
 #endif
   saveContext();
-//	__WFI();
-	restoreContext();
+#if STOP_EN
+  __WFI();
+#endif
+  restoreContext();
   // Infinite loop
   while (1){
 //  	GPIOB->ODR ^= GPIO_Pin_3;
@@ -172,7 +156,11 @@ static inline void pwrInit( void ){
   // не ждем, пока восстановится VREFIN, проверяем только при запуске АЦП
   PWR->CR |= PWR_CR_ULP | PWR_CR_FWU | PWR_CR_LPSDSR;
   // Interrupt-only Wakeup, DeepSleep enable, SleepOnExit enable
+#if STOP_EN
+  SCB->SCR = (SCB->SCR & ~SCB_SCR_SEVONPEND_Msk) | SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk;
+#else
   SCB->SCR = (SCB->SCR & ~SCB_SCR_SEVONPEND_Msk) | SCB_SCR_SLEEPDEEP_Msk;// | SCB_SCR_SLEEPONEXIT_Msk;
+#endif // STOP_EN
 }
 
 static inline void eepromUnlock( void ){
@@ -199,6 +187,7 @@ static inline void eepromUnlock( void ){
 * Date:         09-23-16
 *******************************************************************************/
 void restoreContext(void){
+#if STOP_EN
 	// disable interrupts if they weren't already disabled
 	__disable_irq();
 		// Enable GPIO clocks
@@ -211,6 +200,7 @@ void restoreContext(void){
 		GPIOB->MODER = GPIOB_MODER;
 	// enable interrupts if they were enabled before this function was called
 	__enable_irq();
+#endif //STOP_EN
 }
 
 
@@ -229,6 +219,7 @@ void restoreContext(void){
 * Date:         09-23-16
 *******************************************************************************/
 void saveContext(void){
+#if STOP_EN
 
 	// disable interrupts
 	__disable_irq();
@@ -251,6 +242,7 @@ void saveContext(void){
 		// Disable GPIO clocks
 		RCC->IOPENR &= ~( RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN );
 	__enable_irq();
+#endif // STOP_EN
 }
 
 

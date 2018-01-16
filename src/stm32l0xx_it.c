@@ -10,6 +10,7 @@
 /* External variables --------------------------------------------------------*/
 
 extern uint8_t regBuf[];
+extern volatile uint8_t csmaCount;
 
 /******************************************************************************/
 /*            Cortex-M0+ Processor Interruption and Exception Handlers         */ 
@@ -32,7 +33,7 @@ void PendSV_Handler(void){
 void SysTick_Handler(void) {
 //  mTick++;
 }
-
+#if 0 // Измерение проводится в блокирующем режиме
 void ADC1_COMP_IRQHandler(void){
   if( (ADC1->ISR & ADC_ISR_EOS) == 0 ){
     // Неизвестное прерывание - перезапускаем АЦП
@@ -55,15 +56,11 @@ void ADC1_COMP_IRQHandler(void){
 
     // Пересчет: X (мВ) / 10 - 150 = Y * 0.01В. Например: 3600мВ = 210ед, 2000мВ = 50ед
     sensData.bat = (uint8_t)(((3000L * vrefCal)/vref)/10 - 150);
-//    deepSleepOn();
-    flags.batCplt = TRUE;
-    // Не пара ли передавать данные серверу?
-//    dataSendTry();
   }
   // Стираем
   ADC1->ISR |= 0xFF; //ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP;
 }
-
+#endif
 
 /**
 * RTC global interrupt through EXTI lines 17, 19 and 20.
@@ -135,7 +132,11 @@ void EXTI0_1_IRQHandler(void)
 	// Восстанавливаем настройки портов
   restoreContext();
 
-	EXTI->PR |= DIO0_PIN;
+  // Выключаем RFM69
+  rfmSetMode_s( REG_OPMODE_SLEEP );
+
+  // Стираем флаг прерывания EXTI
+  EXTI->PR |= DIO0_PIN;
   if( rfm.mode == MODE_RX ){
     // Если что-то и приняли, то случайно
     // Опустошаем FIFO
@@ -146,10 +147,10 @@ void EXTI0_1_IRQHandler(void)
   else if( rfm.mode == MODE_TX ) {
     // Отправили пакет с температурой
   	wutStop();
+  	sensData.bat = 0;
+  	flags.lightCplt = FALSE;
   	state = STAT_READY;
   }
-  // Выключаем RFM69
-  rfmSetMode_s( REG_OPMODE_SLEEP );
   // Отмечаем останов RFM_TX
 #if DEBUG_TIME
 	dbgTime.rfmTxEnd = mTick;
@@ -166,6 +167,7 @@ void EXTI2_3_IRQHandler( void ){
 
   // Восстанавливаем настройки портов
   restoreContext();
+  wutStop();
 
   // Выключаем прерывание от DIO3 (RSSI)
   EXTI->PR |= DIO3_PIN;
@@ -181,9 +183,9 @@ void EXTI2_3_IRQHandler( void ){
 
   // Канал занят - Выжидаем паузу 30мс + x * 20мс
   timeNow = getRtcTime();
-  if( timeNow > sendTryStopTime ){
-    // Время на попытки отправить данные вышло - все бросаем до следующего раза
-    wutStop();
+  if( (csmaCount == 3) || (timeNow > sendTryStopTime) ){
+    // Количество попыток и время на попытки отправить данные вышло - все бросаем до следующего раза
+  	csmaCount = 0;
     state = STAT_READY;
   }
   else {

@@ -17,6 +17,7 @@
 
 extern uint8_t regBuf[];
 
+volatile uint8_t csmaCount = 0;
 tUxTime sendTryStopTime;
 static uint8_t msgNum;      // Порядковый номер отправляемого пакета
 
@@ -37,9 +38,6 @@ void wutIrqHandler( void ){
     case STAT_L_MESUR:
       // Пора читать измеренную температуру из датчика
       lightEnd();
-      flags.lightCplt = TRUE;
-      state = STAT_L_READ;
-    case STAT_L_READ:
       // Не пара ли передавать данные серверу?
       dataSendTry();
       break;
@@ -83,7 +81,7 @@ int8_t dataSendTry( void ){
   uint8_t tmrf;
 
   // ------ Надо ли отправлять ? ------------
-  if( flags.batCplt && flags.lightCplt ){
+  if( flags.lightCplt ){
     if( ((tmrf = rtc.min % SEND_TOUT) == 0 ) || // Время передачи наступило
          (((tmp = sensData.light - sensData.lightPrev) > 0.5) || (tmp < -0.5)) || // За 1 мин температура изменилась более, чем 0.5 гр.С
          (((tmp = sensData.light - sensData.lightPrev6) > 1) || (tmp < -1)) ){ // С предыдущей ОЧЕРЕДНОЙ отправки температура изменилась более, чем 1 гр.С
@@ -94,8 +92,6 @@ int8_t dataSendTry( void ){
       // Запоминаем время остановки попыток отправки - пробуем не более 1-2 секунды
       sendTryStopTime = getRtcTime() + 1;
       csmaRun();
-      state = STAT_TX_START;
-
     }
     else {
     	state = STAT_READY;
@@ -112,14 +108,15 @@ int8_t dataSendTry( void ){
 void csmaRun( void ){
   state = STAT_RF_CSMA_START;
   // Включаем прерывание от DIO3 (RSSI)
-  EXTI->PR |= DIO3_PIN;
   EXTI->IMR |= (DIO3_PIN);
+  EXTI->PR |= DIO3_PIN;
 
   // Отмечаем запуск RFM_RX
 #if DEBUG_TIME
 	dbgTime.rfmRxStart = mTick;
 #endif // DEBUG_TIME
 
+	csmaCount++;
   rfmSetMode_s( REG_OPMODE_RX );
   // Будем слушать эфир в течение времени передачи одного пакета * 2
   wutSet( TX_DURAT );
@@ -128,6 +125,9 @@ void csmaRun( void ){
 // Устанавливааем паузу случайной длительности (30-150 мс) в прослушивании канала на предмет тишины
 void csmaPause( void ){
   uint32_t pause;
+
+  pause = RTC->SSR;
+#if 0
   // Включаем генератор случайных чисел
   RCC->AHBENR |= RCC_AHBENR_RNGEN;
   RNG->CR |= RNG_CR_RNGEN;
@@ -139,6 +139,7 @@ void csmaPause( void ){
   // Число RND готово или ошибка (тогда RND = 0)
   pause = RNG->DR;
   RCC->AHBENR &= ~RCC_AHBENR_RNGEN;
+#endif
   // Длительность паузы
   pause = ((pause * 6) / (~(0L)) + 1) * TX_DURAT ;
   wutSet( pause );
