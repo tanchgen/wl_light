@@ -18,6 +18,13 @@ volatile tRtc rtc;
 volatile tUxTime uxTime;
 uint8_t secondFlag = RESET;
 
+// Для тестирования - массив интервалов таймера WUT
+static uint8_t wutCount;
+struct {
+  eState wutState;
+  uint32_t wutVol;
+} wutTest[64];
+
 static void RTC_SetTime( volatile tRtc * prtc );
 static void RTC_GetTime( volatile tRtc * prtc );
 static void RTC_SetDate( volatile tRtc * prtc );
@@ -115,6 +122,9 @@ void timeInit( void ) {
   uxTime = xTm2Utime( &rtc );
   setAlrm( uxTime, ALRM_A );
 
+  wutTest[10].wutVol = RTC->DR;
+  while( (wutTest[10].wutVol == RTC->DR) )
+  {}
 }
 
 // Получение системного мремени
@@ -284,6 +294,7 @@ void timersHandler( void ) {
 #endif
 }
 
+#if 0
 void timersProcess( void ) {
 
 #if 0
@@ -304,6 +315,7 @@ void timersProcess( void ) {
     secondFlag = RESET;
   }
 }
+#endif
 
 #if 1
 // Задержка по SysTick без прерывания
@@ -378,9 +390,9 @@ static void RTC_GetDate( volatile tRtc * prtc ){
     return;
   }
   prtc->year = BCD2BIN( RTC->DR >> RTC_POSITION_DR_YU );
-  prtc->month = BCD2BIN( RTC->DR >> RTC_POSITION_DR_MU );
+  prtc->month = BCD2BIN( (RTC->DR >> RTC_POSITION_DR_MU) & 0x1f );
   prtc->date = BCD2BIN( RTC->DR );
-  prtc->wday = ( RTC->DR >> RTC_POSITION_DR_WDU ) >> 0x7;
+  prtc->wday = ( RTC->DR >> RTC_POSITION_DR_WDU ) & 0x7;
 }
 
 static void RTC_SetAlrm( tRtc * prtc, uint8_t alrm ){
@@ -442,9 +454,12 @@ void wutStop( void ){
     RTC->CR &=~ RTC_CR_WUTE;
     while((RTC->ISR & RTC_ISR_WUTWF) != RTC_ISR_WUTWF)
     {}
+    RTC->ISR &= ~RTC_ISR_WUTF;
     // Disable write access
     RTC->WPR = 0xFE;
     RTC->WPR = 0x64;
+    // Стираем флаг прерывания EXTI
+    EXTI->PR |= EXTI_PR_PR20;
 }
 
 /* Установка и запуск wakeup-таймера
@@ -452,12 +467,16 @@ void wutStop( void ){
  */
 void wutSet( uint32_t us ){
 
+  wutTest[wutCount].wutVol = us;
+  wutTest[wutCount++].wutState = state;
   // Если wukt == 0: просто останавливаем WUT
   RTC->WPR = 0xCA;
   RTC->WPR = 0x53;
   RTC->CR &= ~RTC_CR_WUTE;
   while((RTC->ISR & RTC_ISR_WUTWF) != RTC_ISR_WUTWF)
   {}
+  // Стираем флаг прерывания
+  RTC->ISR &= ~RTC_ISR_WUTF;
   if( us != 0 ){
     // Вычисляем значение таймера: wukt = (us * (RTCCLOCK / 4))/1000000 + 1
     // Максимальная погрешность = + 122.07мкс (при 32768кГц)

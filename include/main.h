@@ -46,7 +46,6 @@ typedef enum {
 // Структура сохраняемых в EEPROM параметров
 typedef struct {
   uint8_t adcCal;       // Цалибровочный фактор для АЦП
-  uint8_t lightResol;		// Разренение измерения освещенности (VH1750_OSH_HI = 0x20, VH1750_OSH_HI2 = 0x21, VH1750_OSH_LO = 0x23)
   uint8_t rfmNetId;     // ID сети
   uint8_t rfmChannel;   // Номер канала
   uint8_t rfmNodeAddr;  // Адрес Нода
@@ -55,9 +54,9 @@ typedef struct {
 
 // Структура измеряемых датчиком параметров
 typedef struct  __packed {
-  int16_t light;           // Измеряемая температура
-  int16_t lightPrev;     // Температура предыдущего (1мин) измерения
-  int16_t lightPrev6;    // Температура предыдущего переданного (6мин) измерения
+  int16_t volume;           // Измеряемая температура
+  int16_t volumePrev;     // Температура предыдущего (1мин) измерения
+  int16_t volumePrev6;    // Температура предыдущего переданного (6мин) измерения
   uint8_t bat;          // Напряжение питания
   uint8_t rssi;         // Мощность принимаемого радиосигнала
   uint8_t resolution;		// Точность измерения
@@ -65,8 +64,8 @@ typedef struct  __packed {
 } tSensData;
 
 typedef struct{
-  unsigned int lightErr : 1;
-  unsigned int lightCplt : 1;
+  unsigned int sensErr : 1;
+  unsigned int sensCplt : 1;
   unsigned int batCplt : 1;
 } tFlags;
 

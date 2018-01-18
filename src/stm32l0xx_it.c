@@ -56,6 +56,10 @@ void ADC1_COMP_IRQHandler(void){
 
     // Пересчет: X (мВ) / 10 - 150 = Y * 0.01В. Например: 3600мВ = 210ед, 2000мВ = 50ед
     sensData.bat = (uint8_t)(((3000L * vrefCal)/vref)/10 - 150);
+//    deepSleepOn();
+    flags.batCplt = TRUE;
+    // Не пара ли передавать данные серверу?
+//    dataSendTry();
   }
   // Стираем
   ADC1->ISR |= 0xFF; //ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP;
@@ -76,23 +80,8 @@ void RTC_IRQHandler(void){
 
   if( RTC->ISR & RTC_ISR_WUTF ){
     // Wake-Up timer interrupt
-    //Clear WUTF
-    // Write access for RTC registers
-  	RTC->WPR = 0xCA;
-  	RTC->WPR = 0x53;
-	  // Останавливаем WakeUp Таймер
-	  RTC->CR &= ~RTC_CR_WUTE;
-	  while((RTC->ISR & RTC_ISR_WUTWF) != RTC_ISR_WUTWF)
-	  {}
-    RTC->ISR &= ~RTC_ISR_WUTF;
-//	RTC->ISR = (~((RTC_ISR_WUTF | RTC_ISR_INIT) & 0x0000FFFFU) | (RTC->ISR & RTC_ISR_INIT));
-//    RTC->CR |= RTC_CR_WUTE;
-    // Disable write access
-    RTC->WPR = 0xFE;
-    RTC->WPR = 0x64;
-    wutIrqHandler();
-    // Стираем флаг прерывания EXTI
-    EXTI->PR |= EXTI_PR_PR20;
+  	wutStop();
+  	wutIrqHandler();
   }
   if( RTC->ISR & RTC_ISR_ALRAF ){
     // Alarm A interrupt
@@ -111,17 +100,18 @@ void RTC_IRQHandler(void){
 	dbgTime.mcuEnd = mTick;
 #endif // DEBUG_TIME
 
-	// Проверяем на наличие прерывания EXTI
-	if(EXTI->PR != 0){
-		uint8_t tmp = EXTI->PR;
-		EXTI->PR = tmp;
-	}
   // Стираем PWR_CR_WUF
   PWR->CR |= PWR_CR_CWUF;
   while( (PWR->CSR & PWR_CSR_WUF) != 0)
   {}
 	// Сохраняем настройки портов
 	saveContext();
+	// Проверяем на наличие прерывания EXTI
+	if(EXTI->PR != 0){
+		uint32_t tmp = EXTI->PR;
+		EXTI->PR = tmp;
+		NVIC->ICPR[0] = NVIC->ISPR[0];
+	}
 }
 
 /**
@@ -131,9 +121,6 @@ void EXTI0_1_IRQHandler(void)
 {
 	// Восстанавливаем настройки портов
   restoreContext();
-
-  // Выключаем RFM69
-  rfmSetMode_s( REG_OPMODE_SLEEP );
 
   // Стираем флаг прерывания EXTI
   EXTI->PR |= DIO0_PIN;
@@ -147,17 +134,24 @@ void EXTI0_1_IRQHandler(void)
   else if( rfm.mode == MODE_TX ) {
     // Отправили пакет с температурой
   	wutStop();
-  	sensData.bat = 0;
-  	flags.lightCplt = FALSE;
-  	state = STAT_READY;
+  	txEnd();
   }
   // Отмечаем останов RFM_TX
 #if DEBUG_TIME
 	dbgTime.rfmTxEnd = mTick;
 #endif // DEBUG_TIME
 
+  // Выключаем RFM69
+  rfmSetMode_s( REG_OPMODE_SLEEP );
+
 	// Сохраняем настройки портов
 	saveContext();
+	// Проверяем на наличие прерывания EXTI
+	if(EXTI->PR != 0){
+		uint32_t tmp = EXTI->PR;
+		EXTI->PR = tmp;
+		NVIC->ICPR[0] = NVIC->ISPR[0];
+	}
 }
 
 // Прерывание по PA3 - DIO3 RSSI
@@ -183,18 +177,24 @@ void EXTI2_3_IRQHandler( void ){
 
   // Канал занят - Выжидаем паузу 30мс + x * 20мс
   timeNow = getRtcTime();
-  if( (csmaCount == 3) || (timeNow > sendTryStopTime) ){
+  if( (csmaCount == CSMA_COUNT_MAX) || (timeNow > sendTryStopTime) ){
     // Количество попыток и время на попытки отправить данные вышло - все бросаем до следующего раза
   	csmaCount = 0;
-    state = STAT_READY;
+    txEnd();
   }
   else {
   	// Можно еще попытатся - выждем паузу
-  	csmaPause();
+    csmaPause();
   }
 
 	// Сохраняем настройки портов
 	saveContext();
+	// Проверяем на наличие прерывания EXTI
+	if(EXTI->PR != 0){
+		uint32_t tmp = EXTI->PR;
+		EXTI->PR = tmp;
+		NVIC->ICPR[0] = NVIC->ISPR[0];
+	}
   return;
 }
 

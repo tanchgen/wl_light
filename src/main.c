@@ -33,7 +33,6 @@ uint32_t GPIOC_MODER;
 tDbgTime dbgTime;
 
 #endif // DEBUG_TIME
-void EXTI2_3_IRQHandler( void );
 
 /* Private function prototypes -----------------------------------------------*/
 static inline void mainInit( void );
@@ -69,6 +68,8 @@ int main(int argc, char* argv[])
   do{
 		// Запускаем измерение напряжения батареи
 		batStart();
+//    ADC1->CR |= ADC_CR_ADSTART;
+
 		// Запускаем измерение температуры
 		lightStart();
 		mDelay(180);
@@ -81,16 +82,18 @@ int main(int argc, char* argv[])
   mesureStart();
 //  GPIOB->MODER = (GPIOB->MODER & ~GPIO_MODER_MODE3) | GPIO_MODER_MODE3_0;
   pwrInit();
-//  rfmSetMode_s( REG_OPMODE_SLEEP );
-//  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk;
+#if 0
   // Проверка работы csma
-  for( uint8_t i=0; i < 4; i++ ){
-	while( (state != STAT_RF_CSMA_START) && (state != STAT_RF_CSMA_PAUSE) )
-	{}
+  for( uint8_t i=0; i < 5; i++ ){
+  	while(state != STAT_RF_CSMA_START)
+  	{}
     mDelay(1);
-    EXTI2_3_IRQHandler();
+    EXTI->SWIER = DIO3_PIN;
+    if( state == STAT_READY ){
+      break;
+    }
   }
-
+#endif  // Test CSMA
 #endif
   saveContext();
 #if STOP_EN

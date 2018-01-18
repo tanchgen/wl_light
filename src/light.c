@@ -11,6 +11,8 @@
 #include "my_time.h"
 #include "light.h"
 
+static EEMEM uint8_t lightResol;   // Разрешение измерения освещенности (VH1750_OSH_HI = 0x20, VH1750_OSH_HI2 = 0x21, VH1750_OSH_LO = 0x23)
+
 
 static uint8_t vh1750Write( uint8_t op );
 static uint32_t vh1750Read( uint8_t *rxBuffer );
@@ -66,16 +68,29 @@ void lightInit( void ){
   DVI_PORT->OSPEEDR &= ~(0x3 << (DVI_PIN_NUM * 2));
   DVI_PORT->PUPDR &= ~(0x3<< (DVI_PIN_NUM * 2));
   DVI_PORT->MODER = (DVI_PORT->MODER &  ~(0x3<< (DVI_PIN_NUM * 2))) | (0x1<< (DVI_PIN_NUM * 2));
+//  // Включаем DVI
+//  DVI_PORT->BSRR |= DVI_PIN;
+//  // Ждем >1мкс Для тактовой частоты 4192МГц
+//  __NOP();
+//  __NOP();
+//  __NOP();
+//  __NOP();
+//  __NOP();
+//  vh1750Write( VH1750_POWER_DOWN );
 
   // Настройка режима работы
-  if( eeBackup.lightResol == 0x00 ){
+  if( lightResol == 0x00 ){
   	// По умолчанию - высокое разрешение
   	sensData.resolution = VH1750_OSH_HI;
-    eeBackup.lightResol = VH1750_OSH_HI;
+    lightResol = VH1750_OSH_HI;
   }
   else {
-  	sensData.resolution = eeBackup.lightResol;
+  	sensData.resolution = lightResol;
   }
+//  if( vh1750Write( sensData.resolution ) != 1){
+//    flags.sensErr = SET;
+//    sensData.volume = 0;
+//  }
   // Задание времени преобразования
   if( sensData.resolution == VH1750_OSH_LO ){
   	sensData.convTout = 24000;  // 24 мс
@@ -125,16 +140,16 @@ void lightStart( void ){
 
   // Отправляем команду начать измерение
   if( vh1750Write( sensData.resolution ) != 1){
-  	flags.lightErr = SET;
-  	sensData.light = 0;
+  	flags.sensErr = SET;
+  	sensData.volume = 0;
   }
   else {
-  	flags.lightErr = RESET;
+  	flags.sensErr = RESET;
   }
-// Уснуть на время преобразования, мкс макс: Hi-Resolution - 180мс, Lo-Resolution - 24мс
-  wutSet( sensData.convTout );
-
   state = STAT_L_MESUR;
+
+  // Уснуть на время преобразования, мкс макс: Hi-Resolution - 180мс, Lo-Resolution - 24мс
+  wutSet( sensData.convTout );
 }
 
 // Читаем освещенность
@@ -146,10 +161,10 @@ uint16_t vh1750LsRead( void ){
 
   if( vh1750Read( lsBuf.u8 ) != 0) {
     lsBuf.u16 = 0;
-    flags.lightErr = SET;
+    flags.sensErr = SET;
   }
   else {
-    flags.lightErr = RESET;
+    flags.sensErr = RESET;
   }
 
   // Отмечаем останов измерения
@@ -195,14 +210,14 @@ static uint32_t vh1750Read( uint8_t *rxBuffer ) {
 
 
 uint8_t lightEnd( void ){
-  if( flags.lightErr == 0){
-    sensData.light = vh1750LsRead();
+  if( flags.sensErr == 0){
+    sensData.volume = vh1750LsRead();
   }
-  flags.lightCplt = SET;
+  flags.sensCplt = SET;
   state = STAT_L_CPLT;
 
   vh1750Stop();
-  return flags.lightErr;
+  return flags.sensErr;
 }
 
 
@@ -249,8 +264,8 @@ void thermoIrqHandler( void ){
 
 #if 0
 static void thermoErrHandler( void ){
-  flags.lightErr = SET;
-  sensData.light = 0xFF00;
+  flags.sensErr = SET;
+  sensData.volume = 0xFF00;
   // Сброс I2C
   I2C1->CR1 &= ~I2C_CR1_PE;
   // APB2 clock == system clock

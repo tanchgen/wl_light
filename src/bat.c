@@ -18,7 +18,7 @@ void batInit(void){
   RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;// | RCC_APB2ENR_SYSCFGEN;
 
   // Конфигурация АЦП
-  ADC1->CFGR2 |= LL_ADC_CLOCK_SYNC_PCLK_DIV1;
+  ADC1->CFGR2 |= (ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_0);
   // Включаем программный запуск и AUTOFF
   ADC1->CFGR1 = (ADC1->CFGR1 & ~ADC_CFGR1_EXTEN) | ADC_CFGR1_AUTOFF;
   // Только VREFINT канал
@@ -27,13 +27,6 @@ void batInit(void){
   ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1;
 
   ADC->CCR |= ADC_CCR_VREFEN;
-
-#if 0 // Измерения проводим в блокирующем режиме
-  // Прерывание по окончанию преобразования
-  ADC1->IER = ADC_IER_EOSIE;
-  NVIC_EnableIRQ(ADC1_COMP_IRQn);
-  NVIC_SetPriority(ADC1_COMP_IRQn,3);
-#endif
 
   ADC1->CR |= ADC_CR_ADDIS;
 
@@ -86,4 +79,7 @@ void batEnd( void ){
   // Стираем флаги
   ADC1->ISR |= 0xFF; //ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP;
 	RCC->APB2ENR &= ~RCC_APB2ENR_ADCEN;
+	flags.batCplt = TRUE;
+	    // Не пара ли передавать данные серверу?
+	dataSendTry();
 }

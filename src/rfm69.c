@@ -400,9 +400,9 @@ static inline void rfmRegSetup( void ){
   rfmRegWrite( REG_PACK_CFG, REG_PACK_CFG_VAR | REG_PACK_CFG_CRCON | REG_PACK_CFG_ADDRBRD);
 
   // Настройка минимальной рабочей границы  RSSI ( -114дБ )
-  rfmRegWrite( REG_RSSI_THRESH, 0xE4 );
-  // Настройка минимальной рабочей границы  RSSI ( -90дБ )
-  // rfmRegWrite( REG_RSSI_THRESH, 0xB4 );
+  // rfmRegWrite( REG_RSSI_THRESH, 0xE4 );
+  // Настройка минимальной рабочей границы  RSSI ( -108дБ )
+  rfmRegWrite( REG_RSSI_THRESH, 0xD8 );
 
   // Передача начинается сразу по условию: В FIFO есть данные и установлен TX-режим
   rfmRegWrite( REG_FIFO_THRESH, 0x8F );
