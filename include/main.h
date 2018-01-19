@@ -3,7 +3,7 @@
 // Includes ------------------------------------------------------------------
 #include "stm32l0xx.h"
 
-#define STOP_EN		0
+#define STOP_EN		1
 
 #ifndef NVIC_PRIORITYGROUP_0
 
@@ -59,8 +59,6 @@ typedef struct  __packed {
   int16_t volumePrev6;    // Температура предыдущего переданного (6мин) измерения
   uint8_t bat;          // Напряжение питания
   uint8_t rssi;         // Мощность принимаемого радиосигнала
-  uint8_t resolution;		// Точность измерения
-  uint32_t convTout;			// Время измерения
 } tSensData;
 
 typedef struct{

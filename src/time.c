@@ -69,7 +69,7 @@ void rtcInit(void){
   // Устанавливаем секунды в будильник - разбиваем все ноды на 60 групп
   RTC->ALRMAR = (uint32_t)(BCD2BIN(rfm.nodeAddr % 60));
   // Alarm A every day, every hour, every minute
-  RTC->ALRMAR = RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2;
+  RTC->ALRMAR |= RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2;
   RTC->CR |= RTC_CR_ALRAIE | RTC_CR_ALRAE;
 
   // --- Configure WakeUp Timer -----
@@ -114,15 +114,14 @@ void timeInit( void ) {
   rtc.sec = 0;;
   rtc.ss = 0;
 
-
+  wutTest[10].wutVol = RTC->DR;
   RTC_SetDate( &rtc );
   RTC_SetTime( &rtc );
-  // Выставляем будильник для измерения температуры
-  rtc.sec = BCD2BIN(rfm.nodeAddr % 60) + 1;
-  uxTime = xTm2Utime( &rtc );
-  setAlrm( uxTime, ALRM_A );
-
-  wutTest[10].wutVol = RTC->DR;
+//  // Выставляем будильник для измерения температуры
+//  rtc.sec = BCD2BIN(rfm.nodeAddr % 60) + 1;
+//  uxTime = xTm2Utime( &rtc );
+//  setAlrm( uxTime, ALRM_A );
+//
   while( (wutTest[10].wutVol == RTC->DR) )
   {}
 }

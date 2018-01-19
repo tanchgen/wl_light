@@ -77,11 +77,11 @@ int main(int argc, char* argv[])
 		lightEnd();
   } while(1);
 #else
+  pwrInit();
   timeInit();
   // Запустили измерения
   mesureStart();
 //  GPIOB->MODER = (GPIOB->MODER & ~GPIO_MODER_MODE3) | GPIO_MODER_MODE3_0;
-  pwrInit();
 #if 0
   // Проверка работы csma
   for( uint8_t i=0; i < 5; i++ ){

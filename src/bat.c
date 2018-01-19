@@ -59,7 +59,6 @@ void batStart( void ){
     while ((ADC1->ISR & ADC_ISR_ADRDY) == 0)
     {}
   }
-
   ADC1->CR |= ADC_CR_ADSTART;
 }
 

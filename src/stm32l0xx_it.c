@@ -12,6 +12,14 @@
 extern uint8_t regBuf[];
 extern volatile uint8_t csmaCount;
 
+void extiPdTest( void ){
+  if(EXTI->PR != 0){
+    uint32_t tmp = EXTI->PR;
+    EXTI->PR = tmp;
+    NVIC->ICPR[0] = NVIC->ISPR[0];
+  }
+}
+
 /******************************************************************************/
 /*            Cortex-M0+ Processor Interruption and Exception Handlers         */ 
 /******************************************************************************/
@@ -107,11 +115,7 @@ void RTC_IRQHandler(void){
 	// Сохраняем настройки портов
 	saveContext();
 	// Проверяем на наличие прерывания EXTI
-	if(EXTI->PR != 0){
-		uint32_t tmp = EXTI->PR;
-		EXTI->PR = tmp;
-		NVIC->ICPR[0] = NVIC->ISPR[0];
-	}
+	extiPdTest();
 }
 
 /**
@@ -147,11 +151,7 @@ void EXTI0_1_IRQHandler(void)
 	// Сохраняем настройки портов
 	saveContext();
 	// Проверяем на наличие прерывания EXTI
-	if(EXTI->PR != 0){
-		uint32_t tmp = EXTI->PR;
-		EXTI->PR = tmp;
-		NVIC->ICPR[0] = NVIC->ISPR[0];
-	}
+	extiPdTest();
 }
 
 // Прерывание по PA3 - DIO3 RSSI
@@ -177,7 +177,7 @@ void EXTI2_3_IRQHandler( void ){
 
   // Канал занят - Выжидаем паузу 30мс + x * 20мс
   timeNow = getRtcTime();
-  if( (csmaCount == CSMA_COUNT_MAX) || (timeNow > sendTryStopTime) ){
+  if( (csmaCount >= CSMA_COUNT_MAX) || (timeNow > sendTryStopTime) ){
     // Количество попыток и время на попытки отправить данные вышло - все бросаем до следующего раза
   	csmaCount = 0;
     txEnd();
@@ -190,11 +190,7 @@ void EXTI2_3_IRQHandler( void ){
 	// Сохраняем настройки портов
 	saveContext();
 	// Проверяем на наличие прерывания EXTI
-	if(EXTI->PR != 0){
-		uint32_t tmp = EXTI->PR;
-		EXTI->PR = tmp;
-		NVIC->ICPR[0] = NVIC->ISPR[0];
-	}
+  extiPdTest();
   return;
 }
 

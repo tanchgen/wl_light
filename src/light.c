@@ -11,9 +11,6 @@
 #include "my_time.h"
 #include "light.h"
 
-static EEMEM uint8_t lightResol;   // Разрешение измерения освещенности (VH1750_OSH_HI = 0x20, VH1750_OSH_HI2 = 0x21, VH1750_OSH_LO = 0x23)
-
-
 static uint8_t vh1750Write( uint8_t op );
 static uint32_t vh1750Read( uint8_t *rxBuffer );
 
@@ -70,46 +67,25 @@ void lightInit( void ){
   DVI_PORT->MODER = (DVI_PORT->MODER &  ~(0x3<< (DVI_PIN_NUM * 2))) | (0x1<< (DVI_PIN_NUM * 2));
 //  // Включаем DVI
 //  DVI_PORT->BSRR |= DVI_PIN;
-//  // Ждем >1мкс Для тактовой частоты 4192МГц
-//  __NOP();
-//  __NOP();
-//  __NOP();
-//  __NOP();
-//  __NOP();
 //  vh1750Write( VH1750_POWER_DOWN );
 
-  // Настройка режима работы
-  if( lightResol == 0x00 ){
-  	// По умолчанию - высокое разрешение
-  	sensData.resolution = VH1750_OSH_HI;
-    lightResol = VH1750_OSH_HI;
-  }
-  else {
-  	sensData.resolution = lightResol;
-  }
-//  if( vh1750Write( sensData.resolution ) != 1){
-//    flags.sensErr = SET;
-//    sensData.volume = 0;
-//  }
-  // Задание времени преобразования
-  if( sensData.resolution == VH1750_OSH_LO ){
-  	sensData.convTout = 24000;  // 24 мс
-  }
-  else {
-  	sensData.convTout = 180000;  // 180 мс
-  }
-
   vh1750Stop();
+  // Ждем >1мкс Для тактовой частоты 4192МГц
+  __NOP();
+  __NOP();
+  __NOP();
+  __NOP();
+  __NOP();
 }
 
 void vh1750Stop( void ){
 
-	// Подтягиваем вывод вниз
-  DVI_PORT->PUPDR |= 0x2<< (DVI_PIN_NUM * 2);
   // Выключаем VH1750
   DVI_PORT->BRR |= DVI_PIN;
+	// Подтягиваем вывод вниз
+  DVI_PORT->PUPDR |= 0x2<< (DVI_PIN_NUM * 2);
   // Переключаем в режим входа
-  DVI_PORT->MODER = (DVI_PORT->MODER ^ (0x3<< (DVI_PIN_NUM * 2)));
+  DVI_PORT->MODER = (DVI_PORT->MODER ^ (0x1<< (DVI_PIN_NUM * 2)));
 
   // Отмечаем запуск измерения
 #if DEBUG_TIME
@@ -120,18 +96,12 @@ void vh1750Stop( void ){
 
 void lightStart( void ){
 
-	// Выключаем подтяжку вывода
-  DVI_PORT->PUPDR &= ~(0x2<< (DVI_PIN_NUM * 2));
-  // Переключаем в режим выхода
-  DVI_PORT->MODER = (DVI_PORT->MODER ^ (0x3<< (DVI_PIN_NUM * 2)));
   // Включаем VH1750
   DVI_PORT->BSRR |= DVI_PIN;
-  // Ждем >1мкс Для тактовой частоты 4192МГц
-  __NOP();
-  __NOP();
-  __NOP();
-  __NOP();
-  __NOP();
+  // Переключаем в режим выхода
+  DVI_PORT->MODER = (DVI_PORT->MODER ^ (0x1<< (DVI_PIN_NUM * 2)));
+  // Выключаем подтяжку вывода
+  DVI_PORT->PUPDR &= ~(0x2<< (DVI_PIN_NUM * 2));
 
   // Отмечаем запуск измерения
 #if DEBUG_TIME
@@ -139,7 +109,7 @@ void lightStart( void ){
 #endif // DEBUG_TIME
 
   // Отправляем команду начать измерение
-  if( vh1750Write( sensData.resolution ) != 1){
+  if( vh1750Write( CMD_MESURE ) != 1){
   	flags.sensErr = SET;
   	sensData.volume = 0;
   }
@@ -149,7 +119,7 @@ void lightStart( void ){
   state = STAT_L_MESUR;
 
   // Уснуть на время преобразования, мкс макс: Hi-Resolution - 180мс, Lo-Resolution - 24мс
-  wutSet( sensData.convTout );
+  wutSet( CONV_TOUT );
 }
 
 // Читаем освещенность
