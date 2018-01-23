@@ -24,7 +24,7 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections.1148965678" name="Data sections (-fdata-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.215443687" name="Debug level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.max" valueType="enumerated"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format.1363757045" name="Debug format" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format" useByScannerDiscovery="true"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family.1667231371" name="ARM family" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family" useByScannerDiscovery="false" value="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.mcpu.cortex-m0" valueType="enumerated"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family.1667231371" name="ARM family" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family" useByScannerDiscovery="false" value="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.mcpu.cortex-m0plus" valueType="enumerated"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.1136514701" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.extrawarn.1689319816" name="Enable extra warnings (-Wextra)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.extrawarn" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.freestanding.1397120630" name="Assume freestanding environment (-ffreestanding)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.freestanding" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -43,6 +43,7 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.rm.2066287260" name="Remove command" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.rm" useByScannerDiscovery="false" value="rm" valueType="string"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.1603805816" name="Create flash image" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.2118575472" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.unalignedaccess.264154497" name="Unaligned access" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.unalignedaccess" value="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.unalignedaccess.default" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.125161518" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/probe.f0}/Debug" id="ilg.gnuarmeclipse.managedbuild.cross.builder.1956568607" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.2028272882" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler">
@@ -154,12 +155,9 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.200152823.1143519975" name="thermo.c" rcbsApplicability="disable" resourcePath="src/thermo.c" toolsToInvoke="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1446293395.264473868">
-						<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1446293395.264473868" name="Cross ARM GNU C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1446293395"/>
-					</fileInfo>
 					<sourceEntries>
 						<entry excluding="thermo.c|rfm_setup.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
-						<entry excluding="src/stm32l0xx_ll/stm32l0xx_ll_rtc.c|src/stm32l0xx_ll/stm32l0xx_ll_adc.c|src/stm32f0-stdperiph/stm32f0xx_adc.c|src/stm32f0-stdperiph/stm32f0xx_can.c|src/stm32f0-stdperiph/stm32f0xx_cec.c|src/stm32f0-stdperiph/stm32f0xx_comp.c|src/stm32f0-stdperiph/stm32f0xx_crc.c|src/stm32f0-stdperiph/stm32f0xx_crs.c|src/stm32f0-stdperiph/stm32f0xx_dac.c|src/stm32f0-stdperiph/stm32f0xx_dbgmcu.c|src/stm32f0-stdperiph/stm32f0xx_dma.c|src/stm32f0-stdperiph/stm32f0xx_exti.c|src/stm32f0-stdperiph/stm32f0xx_flash.c|src/stm32f0-stdperiph/stm32f0xx_i2c.c|src/stm32f0-stdperiph/stm32f0xx_iwdg.c|src/stm32f0-stdperiph/stm32f0xx_misc.c|src/stm32f0-stdperiph/stm32f0xx_pwr.c|src/stm32f0-stdperiph/stm32f0xx_rtc.c|src/stm32f0-stdperiph/stm32f0xx_spi.c|src/stm32f0-stdperiph/stm32f0xx_syscfg.c|src/stm32f0-stdperiph/stm32f0xx_tim.c|src/stm32f0-stdperiph/stm32f0xx_usart.c|src/stm32f0-stdperiph/stm32f0xx_wwdg.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="system"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="system/src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

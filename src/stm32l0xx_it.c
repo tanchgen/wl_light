@@ -7,15 +7,20 @@
 #include "rfm69.h"
 #include "stm32l0xx_it.h"
 
+uint8_t rssiVol;    //
+
 /* External variables --------------------------------------------------------*/
 
-extern uint8_t regBuf[];
 extern volatile uint8_t csmaCount;
 
 void extiPdTest( void ){
   if(EXTI->PR != 0){
     uint32_t tmp = EXTI->PR;
     EXTI->PR = tmp;
+    if( tmp != 0x00020000 ){
+      return;
+    }
+    RTC->ISR &= ~RTC_ISR_ALRAF;
     NVIC->ICPR[0] = NVIC->ISPR[0];
   }
 }
@@ -41,38 +46,6 @@ void PendSV_Handler(void){
 void SysTick_Handler(void) {
 //  mTick++;
 }
-#if 0 // Измерение проводится в блокирующем режиме
-void ADC1_COMP_IRQHandler(void){
-  if( (ADC1->ISR & ADC_ISR_EOS) == 0 ){
-    // Неизвестное прерывание - перезапускаем АЦП
-    if ((ADC1->CR & ADC_CR_ADSTART) != 0){
-      ADC1->CR |= ADC_CR_ADSTP;
-    }
-    while ((ADC1->CR & ADC_CR_ADSTP) != 0)
-    {}
-    ADC1->CR |= ADC_CR_ADDIS;
-    while ((ADC1->CR & ADC_CR_ADEN) != 0)
-    {}
-    ADC1->CR |= ADC_CR_ADEN;
-  }
-  else {
-    uint32_t vrefCal = *((uint16_t *)0x1FF80078);
-    uint32_t vref = ADC1->DR;
-  	// Выключаем внутренний регулятор напряжения
-    ADC1->CR |= ADC_CR_ADDIS;
-    ADC1->CR &= ~ADC_CR_ADVREGEN;
-
-    // Пересчет: X (мВ) / 10 - 150 = Y * 0.01В. Например: 3600мВ = 210ед, 2000мВ = 50ед
-    sensData.bat = (uint8_t)(((3000L * vrefCal)/vref)/10 - 150);
-//    deepSleepOn();
-    flags.batCplt = TRUE;
-    // Не пара ли передавать данные серверу?
-//    dataSendTry();
-  }
-  // Стираем
-  ADC1->ISR |= 0xFF; //ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP;
-}
-#endif
 
 /**
 * RTC global interrupt through EXTI lines 17, 19 and 20.
@@ -92,12 +65,26 @@ void RTC_IRQHandler(void){
   	wutIrqHandler();
   }
   if( RTC->ISR & RTC_ISR_ALRAF ){
-    // Alarm A interrupt
+    uint32_t tmp = RTC->TR;
+
     //Clear ALRAF
     RTC->ISR &= ~RTC_ISR_ALRAF;
-    uxTime = getRtcTime();
-    if(state == STAT_READY){
-      mesureStart();
+    if( (tmp & 0x1) != 0){
+      if((rtc.min % SEND_TOUT) != 0) {
+        sendToutFlag = SET;
+      }
+      // Alarm A interrupt: Каждая вторая секунда
+      uxTime = getRtcTime();
+      if(state == STAT_READY){
+        if( sendToutFlag == SET ){
+          // Периодическое измерение - измеряем все
+          mesureStart();
+        }
+        else {
+          // Измеряем только освещенность
+          lightStart();
+        }
+      }
     }
     // Стираем флаг прерывания EXTI
     EXTI->PR |= EXTI_PR_PR17;
@@ -167,7 +154,7 @@ void EXTI2_3_IRQHandler( void ){
   EXTI->PR |= DIO3_PIN;
   EXTI->IMR &= ~(DIO3_PIN);
 
-  regBuf[REG_RSSI_VAL] = rfmRegRead( REG_RSSI_VAL );
+  rssiVol = rfmRegRead( REG_RSSI_VAL );
   rfmSetMode_s( REG_OPMODE_SLEEP );
 
   // Отмечаем останов RFM_RX

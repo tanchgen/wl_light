@@ -58,6 +58,7 @@ typedef struct {
 
 extern volatile tRtc rtc;
 extern volatile tUxTime uxTime;
+extern volatile uint8_t sendToutFlag;
 
 extern __IO uint32_t myTick;
 

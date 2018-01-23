@@ -48,6 +48,8 @@ void batInit(void){
 }
 
 void batStart( void ){
+  sensData.bat = 0;
+
 	RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
   // Опять включаем АЦП после калибровки
   ADC1->CR |= ADC_CR_ADEN;

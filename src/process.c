@@ -15,11 +15,10 @@
 #include "rfm69.h"
 #include "process.h"
 
-extern uint8_t regBuf[];
-
 volatile uint8_t csmaCount = 0;
 tUxTime sendTryStopTime;
 static uint8_t msgNum;      // Порядковый номер отправляемого пакета
+extern uint8_t wutCount;
 
 static void sensDataSend( void );
 
@@ -36,6 +35,8 @@ void wutIrqHandler( void ){
   // По какому поводу был включен WUT? - состояние машины
   switch( state ){
     case STAT_L_MESUR:
+      // Обнулили индекс тестового массива WUT
+      wutCount = 0;
       // Пора читать измеренную температуру из датчика
       lightEnd();
       // Не пара ли передавать данные серверу?
@@ -58,10 +59,6 @@ void wutIrqHandler( void ){
       sensDataSend();
       break;
     case STAT_TX_START:
-    	// Время на пердачу вышло - останавливаем
-    	for( uint8_t i = 1; i < 50; i++ ){
-    		regBuf[i] = rfmRegRead( i );
-    	}
     	rfmSetMode_s( REG_OPMODE_SLEEP );
       txEnd();
       break;
@@ -77,28 +74,45 @@ void wutIrqHandler( void ){
 
 int8_t dataSendTry( void ){
   int8_t rc = 0;
-  int32_t tmp;
-  uint8_t tmrf;
   uint8_t flag = RESET; // Отправлять или нет?
 
   // ------ Надо ли отправлять ? ------------
   if( flags.sensCplt ){
-    if( (tmrf = rtc.min % SEND_TOUT) == 0 ){
+    if( (sendToutFlag == SET) && ((rtc.min % SEND_TOUT) == 0) ){
       // Пришло ВРЕМЯ -> отправлять
       flag = SET;
     }
     else {
-      tmp = sensData.volume - sensData.volumePrev;
-      tmp = tmp*20/sensData.volumePrev;
+      int32_t tmp;
+      int32_t tmp0 = sensData.volume;
+      int32_t tmp1 = sensData.volumePrev;
+      int32_t tmp2 = sensData.volumePrev6;
+
+      tmp = tmp0 - tmp1;
+      if( (tmp0 != 0) && (tmp1 != 0) ){
+        // После последнего измерения значение изменилось более, чем на 10% ?
+        tmp = (tmp*10)/tmp1;
+      }
+      else {
+        // После последнего измерения значение изменилось более, чем на 10Лк ?
+        tmp /= 10;
+      }
+
       if( tmp != 0 ){
-        // После последнего измерения значение изменилось более, чем на 5%
         flag = SET;
       }
       else {
-        tmp = sensData.volume - sensData.volumePrev6;
-        tmp = tmp*10/sensData.volumePrev6;
+        tmp = tmp0 - tmp2;
+        if( (tmp0 != 0) && (tmp2 != 0) ){
+          // После последнеей ОЧЕРЕДНОЙ передачи значение изменилось более, чем на 10% ?
+          tmp = (tmp*10)/tmp2;
+        }
+        else {
+          // После последнеей ОЧЕРЕДНОЙ передачи значение изменилось более, чем на 10 Лк ?
+          tmp /= 10;
+        }
         if( tmp != 0 ){
-          // После последней передачи значение изменилось более, чем на 10%
+          // После последней передачи значение изменилось более, чем на 14%
           flag = SET;
         }
       }
@@ -106,7 +120,8 @@ int8_t dataSendTry( void ){
 
     if( flag ){
       // Передача разрешена
-      if(tmrf == 0){
+      if(sendToutFlag == SET){
+        sendToutFlag = RESET;
         sensData.volumePrev6 = sensData.volume;
       }
       // Можно отправлять по радиоканалу
@@ -198,7 +213,6 @@ static void sensDataSend( void ){
 }
 
 void txEnd( void ){
-  sensData.bat = 0;
   flags.sensCplt = FALSE;
   flags.batCplt = FALSE;
   state = STAT_READY;

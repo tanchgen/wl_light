@@ -16,10 +16,11 @@
 
 volatile tRtc rtc;
 volatile tUxTime uxTime;
-uint8_t secondFlag = RESET;
+volatile uint8_t sendToutFlag = SET;
+//uint8_t secondFlag = RESET;
 
 // Для тестирования - массив интервалов таймера WUT
-static uint8_t wutCount;
+uint8_t wutCount;
 struct {
   eState wutState;
   uint32_t wutVol;
@@ -68,8 +69,8 @@ void rtcInit(void){
   {}
   // Устанавливаем секунды в будильник - разбиваем все ноды на 60 групп
   RTC->ALRMAR = (uint32_t)(BCD2BIN(rfm.nodeAddr % 60));
-  // Alarm A every day, every hour, every minute
-  RTC->ALRMAR |= RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2;
+  // Alarm A every day, every hour, every minute, every second
+  RTC->ALRMAR |= RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2 | RTC_ALRMAR_MSK1;
   RTC->CR |= RTC_CR_ALRAIE | RTC_CR_ALRAE;
 
   // --- Configure WakeUp Timer -----
@@ -479,7 +480,7 @@ void wutSet( uint32_t us ){
   if( us != 0 ){
     // Вычисляем значение таймера: wukt = (us * (RTCCLOCK / 4))/1000000 + 1
     // Максимальная погрешность = + 122.07мкс (при 32768кГц)
-    uint16_t  wukt = (us * (RTCCLOCK / 4) )/1000000L;
+    uint16_t  wukt = (uint16_t)((us * (RTCCLOCK / 4) )/1000000L);
     if(wukt == 0){
       wukt++;
     }
