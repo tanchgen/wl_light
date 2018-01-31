@@ -20,6 +20,9 @@
 
 
 #define EEMEM __attribute__((section(".eeprom")))
+#ifndef __packed
+#define __packed __attribute__((packed))
+#endif
 
 enum {
   FALSE,
@@ -44,12 +47,12 @@ typedef enum {
 } eState;
 
 // Структура сохраняемых в EEPROM параметров
-typedef struct {
+typedef struct __packed  {
   uint8_t adcCal;       // Цалибровочный фактор для АЦП
-  uint8_t rfmNetId;     // ID сети
   uint8_t rfmChannel;   // Номер канала
   uint8_t rfmNodeAddr;  // Адрес Нода
   uint8_t rfmTxPwr;     // Мощность передатчика
+  uint16_t rfmNetId;     // ID сети
 } tEeBackup;
 
 // Структура измеряемых датчиком параметров

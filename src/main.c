@@ -47,59 +47,25 @@ int main(int argc, char* argv[])
   (void)argc;
   (void)argv;
 
-  DBGMCU->CR |= DBGMCU_CR_DBG_STOP;
-  // Send a greeting to the trace device (skipped on Release).
-//  trace_puts("Hello ARM World!");
-
-  // At this stage the system clock should have already been configured
-  // at high speed.
-//  trace_printf("System clock: %u Hz\n", SystemCoreClock);
-
   mainInit();
   sysClockInit();
   // Разлочили EEPROM
   eepromUnlock();
 
-  rfmInit();
-  lightInit();
   batInit();
+  lightInit();
+  rfmInit();
 
-#if 0
-  do{
-		// Запускаем измерение напряжения батареи
-		batStart();
-//    ADC1->CR |= ADC_CR_ADSTART;
-
-		// Запускаем измерение температуры
-		lightStart();
-		mDelay(180);
-		batEnd();
-		lightEnd();
-  } while(1);
-#else
   pwrInit();
   timeInit();
   // Запустили измерения
   mesureStart();
 //  GPIOB->MODER = (GPIOB->MODER & ~GPIO_MODER_MODE3) | GPIO_MODER_MODE3_0;
-#if 0
-  // Проверка работы csma
-  for( uint8_t i=0; i < 5; i++ ){
-  	while(state != STAT_RF_CSMA_START)
-  	{}
-    mDelay(1);
-    EXTI->SWIER = DIO3_PIN;
-    if( state == STAT_READY ){
-      break;
-    }
-  }
-#endif  // Test CSMA
-#endif
   saveContext();
 #if STOP_EN
   __WFI();
 #endif
-  restoreContext();
+//  restoreContext();
   // Infinite loop
   while (1){
 //  	GPIOB->ODR ^= GPIO_Pin_3;
@@ -240,7 +206,7 @@ void saveContext(void){
 		// Configure GPIO port pins in Analog Input mode
 		// PA0 - DIO0 interrupt
 		GPIOA->MODER = 0xEBFF30FC;
-		GPIOB->MODER = 0xFFFFFFFF;
+		GPIOB->MODER |= 0xFFFFF3FF;
 
 		// Disable GPIO clocks
 		RCC->IOPENR &= ~( RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN );

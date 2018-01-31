@@ -24,7 +24,7 @@ uint8_t wutCount;
 struct {
   eState wutState;
   uint32_t wutVol;
-} wutTest[64];
+} wutTest[20];
 
 static void RTC_SetTime( volatile tRtc * prtc );
 static void RTC_GetTime( volatile tRtc * prtc );
@@ -68,7 +68,7 @@ void rtcInit(void){
   while((RTC->ISR & RTC_ISR_ALRAWF) != RTC_ISR_ALRAWF)
   {}
   // Устанавливаем секунды в будильник - разбиваем все ноды на 60 групп
-  RTC->ALRMAR = (uint32_t)(BCD2BIN(rfm.nodeAddr % 60));
+  RTC->ALRMAR = (uint32_t)(BIN2BCD(rfm.nodeAddr % 60));
   // Alarm A every day, every hour, every minute, every second
   RTC->ALRMAR |= RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2 | RTC_ALRMAR_MSK1;
   RTC->CR |= RTC_CR_ALRAIE | RTC_CR_ALRAE;
@@ -119,7 +119,7 @@ void timeInit( void ) {
   RTC_SetDate( &rtc );
   RTC_SetTime( &rtc );
 //  // Выставляем будильник для измерения температуры
-//  rtc.sec = BCD2BIN(rfm.nodeAddr % 60) + 1;
+//  rtc.sec = BIN2BCD(rfm.nodeAddr % 60) + 1;
 //  uxTime = xTm2Utime( &rtc );
 //  setAlrm( uxTime, ALRM_A );
 //
@@ -224,9 +224,26 @@ void setRtcTime( tUxTime xtime ){
 }
 
 tUxTime getRtcTime( void ){
+  uint32_t tmp;
+  // Пежде чем читать необходимо убедится, что флаг RTC_ISR_RSF установлен !
+  while((RTC->ISR & RTC_ISR_RSF) == 0)
+  {}
+  // Читаем дату
+  tmp = RTC->DR;
+  rtc.year = BCD2BIN( tmp >> RTC_POSITION_DR_YU );
+  rtc.month = BCD2BIN( (tmp >> RTC_POSITION_DR_MU) & 0x1f );
+  rtc.date = BCD2BIN( tmp );
+  rtc.wday = ( tmp >> RTC_POSITION_DR_WDU ) & 0x7;
+  // Читаем время
+  tmp = RTC->TR;
+  rtc.hour = BCD2BIN( tmp >> RTC_POSITION_TR_HU );
+  rtc.min = BCD2BIN( tmp >> RTC_POSITION_TR_MU );
+  rtc.sec = BCD2BIN( tmp );
+  rtc.ss = RTC->SSR;
 
-  RTC_GetTime( &rtc );
-  RTC_GetDate( &rtc );
+  // Стираем бит синхронизации теневых регистров RCC_DR, RCC_TR, RCC_SSR
+  RTC->ISR &= ~RTC_ISR_RSF;
+
   return xTm2Utime( &rtc );
 }
 
@@ -376,43 +393,47 @@ static void RTC_SetDate( volatile tRtc * prtc ){
 }
 
 static void RTC_GetTime( volatile tRtc * prtc ){
-  if((RTC->ISR & RTC_ISR_RSF) == 0){
-    return;
-  }
-  prtc->hour = BCD2BIN( RTC->TR >> RTC_POSITION_TR_HU );
-  prtc->min = BCD2BIN( RTC->TR >> RTC_POSITION_TR_MU );
-  prtc->sec = BCD2BIN( RTC->TR );
+  // Пежде чем читать необходимо убедится, что флаг RTC_ISR_RSF установлен !
+  while((RTC->ISR & RTC_ISR_RSF) == 0)
+  {}
+  uint32_t tmp = RTC->TR;
+  prtc->hour = BCD2BIN( tmp >> RTC_POSITION_TR_HU );
+  prtc->min = BCD2BIN( tmp >> RTC_POSITION_TR_MU );
+  prtc->sec = BCD2BIN( tmp );
   prtc->ss = RTC->SSR;
 }
 
 static void RTC_GetDate( volatile tRtc * prtc ){
-  if((RTC->ISR & RTC_ISR_RSF) == 0){
-    return;
-  }
-  prtc->year = BCD2BIN( RTC->DR >> RTC_POSITION_DR_YU );
-  prtc->month = BCD2BIN( (RTC->DR >> RTC_POSITION_DR_MU) & 0x1f );
-  prtc->date = BCD2BIN( RTC->DR );
-  prtc->wday = ( RTC->DR >> RTC_POSITION_DR_WDU ) & 0x7;
+  // Пежде чем читать необходимо убедится, что флаг RTC_ISR_RSF установлен !
+  while((RTC->ISR & RTC_ISR_RSF) == 0)
+  {}
+  uint32_t tmp = RTC->DR;
+  prtc->year = BCD2BIN( tmp >> RTC_POSITION_DR_YU );
+  prtc->month = BCD2BIN( (tmp >> RTC_POSITION_DR_MU) & 0x1f );
+  prtc->date = BCD2BIN( tmp );
+  prtc->wday = ( tmp >> RTC_POSITION_DR_WDU ) & 0x7;
 }
 
 static void RTC_SetAlrm( tRtc * prtc, uint8_t alrm ){
   register uint32_t temp = 0U;
   // Если alrm = 0 (ALRM_A) : ALRMAR, есди alrm = 1 (ALRM_B) : ALRMBR
   register uint32_t * palrm = (uint32_t *)&(RTC->ALRMAR) + alrm;
+  register uint32_t tmpMask = RTC_CR_ALRAE << alrm;
+
 
   RTC->WPR = 0xCA;
   RTC->WPR = 0x53;
-  RTC->ISR |= RTC_ISR_INIT;
-  while((RTC->ISR & RTC_ISR_INITF)!=RTC_ISR_INITF)
+  RTC->CR &= ~tmpMask;
+  while((RTC->ISR & RTC_ISR_ALRAWF)!=RTC_ISR_ALRAWF)
   {}
 
   temp = (BIN2BCD( prtc->date ) << RTC_POSITION_ALMA_DU |
           BIN2BCD( prtc->hour ) << RTC_POSITION_ALMA_HU |
           BIN2BCD( prtc->min ) << RTC_POSITION_TR_MU |
           BIN2BCD( prtc->sec ) );
-  *palrm = ( *palrm & (RTC_ALRMAR_PM | RTC_ALRMAR_DT | RTC_ALRMAR_DU | RTC_ALRMAR_HT | RTC_ALRMAR_HU | RTC_ALRMAR_MNT | RTC_ALRMAR_MNU | RTC_ALRMAR_ST | RTC_ALRMAR_SU)) | temp;
+  *palrm = ( *palrm & ~(RTC_ALRMAR_PM | RTC_ALRMAR_DT | RTC_ALRMAR_DU | RTC_ALRMAR_HT | RTC_ALRMAR_HU | RTC_ALRMAR_MNT | RTC_ALRMAR_MNU | RTC_ALRMAR_ST | RTC_ALRMAR_SU)) | temp;
 
-  RTC->ISR &= ~RTC_ISR_INIT;
+  RTC->CR |= tmpMask;
   RTC->WPR = 0xFE;
   RTC->WPR = 0x64;
 }
@@ -431,17 +452,18 @@ static void RTC_CorrAlrm( tRtc * prtc, uint8_t alrm ){
   register uint32_t temp = 0U;
   // Если alrm = 0 (ALRM_A) : ALRMAR, есди alrm = 1 (ALRM_B) : ALRMBR
   register uint32_t * palrm = (uint32_t *)&(RTC->ALRMAR) + alrm;
+  register uint32_t tmpMask = RTC_CR_ALRAE << alrm;
 
   RTC->WPR = 0xCA;
   RTC->WPR = 0x53;
-  RTC->ISR |= RTC_ISR_INIT;
-  while((RTC->ISR & RTC_ISR_INITF)!=RTC_ISR_INITF)
+  RTC->CR &= ~tmpMask;
+  while((RTC->ISR & RTC_ISR_ALRAWF)!=RTC_ISR_ALRAWF)
   {}
 
   temp = BIN2BCD( prtc->sec );
-  *palrm = ( *palrm & (RTC_ALRMAR_ST | RTC_ALRMAR_SU)) | temp;
+  *palrm = ( *palrm & ~(RTC_ALRMAR_ST | RTC_ALRMAR_SU)) | temp;
 
-  RTC->ISR &= ~RTC_ISR_INIT;
+  RTC->CR |= tmpMask;
   RTC->WPR = 0xFE;
   RTC->WPR = 0x64;
 }
@@ -459,7 +481,7 @@ void wutStop( void ){
     RTC->WPR = 0xFE;
     RTC->WPR = 0x64;
     // Стираем флаг прерывания EXTI
-    EXTI->PR |= EXTI_PR_PR20;
+    EXTI->PR &= EXTI_PR_PR20;
 }
 
 /* Установка и запуск wakeup-таймера

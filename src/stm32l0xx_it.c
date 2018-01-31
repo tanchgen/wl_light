@@ -8,21 +8,30 @@
 #include "stm32l0xx_it.h"
 
 uint8_t rssiVol;    //
+//uint8_t txCpltCount = 0;
+
+//#if ! STOP_EN
+//uint8_t rtcLogCount;
+//struct {
+//  uint32_t ssr;
+//  eState state;
+//} rtcLog[64];
+//#endif
 
 /* External variables --------------------------------------------------------*/
 
 extern volatile uint8_t csmaCount;
 
 void extiPdTest( void ){
-  if(EXTI->PR != 0){
-    uint32_t tmp = EXTI->PR;
-    EXTI->PR = tmp;
-    if( tmp != 0x00020000 ){
-      return;
-    }
-    RTC->ISR &= ~RTC_ISR_ALRAF;
-    NVIC->ICPR[0] = NVIC->ISPR[0];
-  }
+//  if(EXTI->PR != 0){
+//    uint32_t tmp = EXTI->PR;
+//    EXTI->PR = tmp;
+//    if( tmp != 0x00020000 ){
+//      return;
+//    }
+//    RTC->ISR &= ~RTC_ISR_ALRAF;
+//    NVIC->ICPR[0] = NVIC->ISPR[0];
+//  }
 }
 
 /******************************************************************************/
@@ -51,8 +60,12 @@ void SysTick_Handler(void) {
 * RTC global interrupt through EXTI lines 17, 19 and 20.
 */
 void RTC_IRQHandler(void){
+//#if ! STOP_EN
+//  rtcLog[rtcLogCount].ssr = RTC->SSR;
+//  rtcLog[rtcLogCount++].state = state;
+//  rtcLogCount &= 0x3F;
+//#endif
 // Восстанавливаем настройки портов
-
   restoreContext();
   // Отмечаем запуск MCU
 #if DEBUG_TIME
@@ -65,6 +78,10 @@ void RTC_IRQHandler(void){
   	wutIrqHandler();
   }
   if( RTC->ISR & RTC_ISR_ALRAF ){
+    while( (RTC->ISR & RTC_ISR_RSF) == 0 )
+    {}
+    uint32_t tmp2 = RTC->DR;
+    (void)tmp2;
     uint32_t tmp = RTC->TR;
 
     //Clear ALRAF
@@ -87,7 +104,7 @@ void RTC_IRQHandler(void){
       }
     }
     // Стираем флаг прерывания EXTI
-    EXTI->PR |= EXTI_PR_PR17;
+    EXTI->PR &= EXTI_PR_PR17;
   }
 
   // Отмечаем Останов MCU
@@ -110,11 +127,16 @@ void RTC_IRQHandler(void){
 */
 void EXTI0_1_IRQHandler(void)
 {
+//#if ! STOP_EN
+//  rtcLog[rtcLogCount].ssr = RTC->SSR;
+//  rtcLog[rtcLogCount++].state = state;
+//  rtcLogCount &= 0x3F;
+//#endif
 	// Восстанавливаем настройки портов
   restoreContext();
 
   // Стираем флаг прерывания EXTI
-  EXTI->PR |= DIO0_PIN;
+  EXTI->PR &= DIO0_PIN;
   if( rfm.mode == MODE_RX ){
     // Если что-то и приняли, то случайно
     // Опустошаем FIFO
@@ -145,14 +167,19 @@ void EXTI0_1_IRQHandler(void)
 // Канал кем-то занят
 void EXTI2_3_IRQHandler( void ){
   tUxTime timeNow;
+//#if ! STOP_EN
+//  rtcLog[rtcLogCount].ssr = RTC->SSR;
+//  rtcLog[rtcLogCount++].state = state;
+//  rtcLogCount &= 0x3F;
+//#endif
 
   // Восстанавливаем настройки портов
   restoreContext();
   wutStop();
 
   // Выключаем прерывание от DIO3 (RSSI)
-  EXTI->PR |= DIO3_PIN;
   EXTI->IMR &= ~(DIO3_PIN);
+  EXTI->PR &= DIO3_PIN;
 
   rssiVol = rfmRegRead( REG_RSSI_VAL );
   rfmSetMode_s( REG_OPMODE_SLEEP );

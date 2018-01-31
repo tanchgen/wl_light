@@ -134,6 +134,8 @@ uint16_t vh1750LsRead( void ){
     flags.sensErr = SET;
   }
   else {
+    // Пересчет значения: коэфф. = 1/1.2
+    lsBuf.u16 = lsBuf.u16 * 10 / 12;
     flags.sensErr = RESET;
   }
 

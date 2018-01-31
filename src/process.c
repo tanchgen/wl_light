@@ -35,8 +35,6 @@ void wutIrqHandler( void ){
   // По какому поводу был включен WUT? - состояние машины
   switch( state ){
     case STAT_L_MESUR:
-      // Обнулили индекс тестового массива WUT
-      wutCount = 0;
       // Пора читать измеренную температуру из датчика
       lightEnd();
       // Не пара ли передавать данные серверу?
@@ -44,7 +42,7 @@ void wutIrqHandler( void ){
       break;
     case STAT_RF_CSMA_START:
       // Канал свободен - отправляем сообщение
-      EXTI->PR |= DIO3_PIN;
+      EXTI->PR &= DIO3_PIN;
       EXTI->IMR &= ~(DIO3_PIN);
 
       // Отмечаем останов RFM_RX
@@ -114,6 +112,7 @@ int8_t dataSendTry( void ){
         if( tmp != 0 ){
           // После последней передачи значение изменилось более, чем на 14%
           flag = SET;
+          sensData.volumePrev6 = sensData.volume;
         }
       }
     }
@@ -145,7 +144,7 @@ void csmaRun( void ){
   state = STAT_RF_CSMA_START;
   // Включаем прерывание от DIO3 (RSSI)
   EXTI->IMR |= (DIO3_PIN);
-  EXTI->PR |= DIO3_PIN;
+  EXTI->PR &= DIO3_PIN;
 
   // Отмечаем запуск RFM_RX
 #if DEBUG_TIME
@@ -187,7 +186,7 @@ void csmaPause( void ){
   pause = 0x7FFFFFFF;
 #endif
   // Длительность паузы
-  pause = ((pause / (0xFFFFFFFFL/9)  ) + 1) * TX_DURAT ;
+  pause = ((pause / (0xFFFFFFFFL/9)  ) + 1) * TX_DURAT * csmaCount;
   state = STAT_RF_CSMA_PAUSE;
   wutSet( pause );
 }
@@ -213,6 +212,8 @@ static void sensDataSend( void ){
 }
 
 void txEnd( void ){
+  // Обнулили индекс тестового массива WUT
+  wutCount = 0;
   flags.sensCplt = FALSE;
   flags.batCplt = FALSE;
   state = STAT_READY;

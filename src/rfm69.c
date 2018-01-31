@@ -151,7 +151,7 @@ void rfmTransmit_s( tPkt * ppkt ){
   uint8_t rc;
 
   EXTI->IMR &= ~DIO0_PIN;
-  EXTI->PR |= DIO0_PIN;
+  EXTI->PR &= DIO0_PIN;
 
   rfmTransmit( ppkt );
 
@@ -310,17 +310,17 @@ static inline void dioInit( void ){
 }
 
 static inline void rfDataInit( void ){
-  uint8_t tmp;
+  uint16_t tmp;
 
   // Инициализация структуры Rfm
   rfm.mode = MODE_STDBY;
   // Считываем из EEPROM параметры
   if( (tmp = eeBackup.rfmNetId) == 0){
     // В еепром ничего не записанно
-    rfm.netId = NET_ID;
-    rfm.channel = CHANN_DEF;
-    rfm.nodeAddr = NODE_ADDR;
-    rfm.txPwr = TX_PWR_10;
+    rfm.netId = eeBackup.rfmNetId = NET_ID;
+    rfm.channel = eeBackup.rfmChannel = CHANN_DEF;
+    rfm.nodeAddr = eeBackup.rfmNodeAddr = NODE_ADDR;
+    rfm.txPwr = eeBackup.rfmTxPwr = TX_PWR_10;
   }
   else {
     rfm.netId = tmp;
