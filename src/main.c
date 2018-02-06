@@ -17,6 +17,8 @@
 EEMEM tEeBackup eeBackup;     // Структура сохраняемых в EEPROM параметров
 //tEeBackup eeBackup;             // Структура сохраняемых в EEPROM параметров
 
+EEMEM uint32_t wfiFaultCount;   // Для тестирования: Счетчик секунд работы не в состоянии STOP
+
 volatile tSensData sensData;    // Структура измеряемых датчиком параметров
 volatile eState state;          // Состояние машины
 volatile tFlags flags;          // Флаги состояний системы
@@ -65,22 +67,13 @@ int main(int argc, char* argv[])
 #if STOP_EN
   __WFI();
 #endif
+
 //  restoreContext();
   // Infinite loop
   while (1){
 //  	GPIOB->ODR ^= GPIO_Pin_3;
-
-  	// Тестовая отправка пакетов
-//    rfmTransmit_s( &pkt );
-//    rfmSetMode_s( REG_OPMODE_SLEEP );
-
-    mDelay(10000);
-
-    // !!! Дебажим  регистры !!!
-//    rfmSetMode_s( REG_OPMODE_STDBY );
-//    for( uint8_t i = 1; i < 0x40; i++ ){
-//    	regBuf[i] = rfmRegRead( i );
-//    }
+    wfiFaultCount++;
+    mDelay(1000);
 
   }
   // Infinite loop, never return.
