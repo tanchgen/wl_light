@@ -139,10 +139,15 @@ void EXTI0_1_IRQHandler(void)
   EXTI->PR &= DIO0_PIN;
   if( rfm.mode == MODE_RX ){
     // Если что-то и приняли, то случайно
+    rssiVol = rfmRegRead( REG_RSSI_VAL );
+    rfmReceive( &pkt );
+    rfmRecvStop();
+    rfmSetMode_s( REG_OPMODE_RX );
+
     // Опустошаем FIFO
-    while( dioRead(DIO_RX_FIFONE) == SET ){
-      rfmRegRead( REG_FIFO );
-    }
+//    while( dioRead(DIO_RX_FIFONE) == SET ){
+//      rfmRegRead( REG_FIFO );
+//    }
   }
   else if( rfm.mode == MODE_TX ) {
     // Отправили пакет с температурой
@@ -155,7 +160,7 @@ void EXTI0_1_IRQHandler(void)
 #endif // DEBUG_TIME
 
   // Выключаем RFM69
-  rfmSetMode_s( REG_OPMODE_SLEEP );
+//  rfmSetMode_s( REG_OPMODE_SLEEP );
 
 	// Сохраняем настройки портов
 	saveContext();

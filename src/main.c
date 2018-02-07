@@ -58,12 +58,14 @@ int main(int argc, char* argv[])
   lightInit();
   rfmInit();
 
-  pwrInit();
-  timeInit();
-  // Запустили измерения
-  mesureStart();
+  rfmSetMode_s( REG_OPMODE_RX );
+
+//  pwrInit();
+//  timeInit();
+//  // Запустили измерения
+//  mesureStart();
 //  GPIOB->MODER = (GPIOB->MODER & ~GPIO_MODER_MODE3) | GPIO_MODER_MODE3_0;
-  saveContext();
+//  saveContext();
 #if STOP_EN
   __WFI();
 #endif
@@ -72,7 +74,7 @@ int main(int argc, char* argv[])
   // Infinite loop
   while (1){
 //  	GPIOB->ODR ^= GPIO_Pin_3;
-    wfiFaultCount++;
+//    wfiFaultCount++;
     mDelay(1000);
 
   }
