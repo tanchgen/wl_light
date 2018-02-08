@@ -70,7 +70,41 @@ typedef struct{
   unsigned int batCplt : 1;
 } tFlags;
 
-//extern volatile uint32_t mTick;
+typedef struct {
+  uint8_t nodeAddr;   // Адрес получателя пакета
+  uint8_t payLen;     // Длина пакета (payload)
+  uint8_t srcNode;    // Адрес отправителя
+  uint8_t devType;   // Тип конечного устройства
+  uint8_t msgNum;     // Номер пакета
+  uint8_t batVolt;    // Напряжение батареи питания
+  uint8_t devState;   // Состояние исполнительного устройства
+  uint8_t cmdNum;       // Температура предыдущего (1мин) измерения
+  int8_t temp;         // Температура предыдущего переданного (6мин) измерения
+} __packed tRxPkt;
+
+typedef struct {
+  uint8_t nodeAddr;   // Адрес получателя пакета
+  uint8_t payLen;     // Длина пакета (payload)
+  uint8_t srcNode;    // Адрес отправителя
+  uint8_t devType;    // Тип конечного устройства
+  uint8_t cmdNum;     // Температура предыдущего (1мин) измерения
+  uint8_t cmd;        // Команда для исполнительного устройства
+} __packed tTxPkt;
+
+
+// Структура измеряемых датчиком параметров
+typedef struct {
+  uint16_t cmdCount;    // Счетчик отправленных команд
+  uint8_t cmd;          // Последняя отправленная команда
+  uint8_t rssi;         // Мощность принимаемого радиосигнала
+  tRxPkt rxPkt;         // Принятый пакет
+} __packed tDev;
+
+extern tRxPkt  rxPkt;
+extern tTxPkt  txPkt;
+extern tDev    dev;
+
+extern volatile uint32_t mTick;
 extern tEeBackup eeBackup;
 extern volatile tSensData sensData;           // Структура измеряемых датчиком параметров
 extern volatile tFlags flags;                 // Флаги состояний системы

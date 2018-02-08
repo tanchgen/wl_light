@@ -8,6 +8,11 @@
 #include "stm32l0xx_it.h"
 
 uint8_t rssiVol;    //
+uint8_t connect = FALSE;
+
+
+uint8_t rssi;         // Мощность принимаемого радиосигнала
+
 //uint8_t txCpltCount = 0;
 
 //#if ! STOP_EN
@@ -53,7 +58,7 @@ void PendSV_Handler(void){
 }
 
 void SysTick_Handler(void) {
-//  mTick++;
+  mTick++;
 }
 
 /**
@@ -143,7 +148,7 @@ void EXTI0_1_IRQHandler(void)
     rfmReceive( &pkt );
     rfmRecvStop();
     rfmSetMode_s( REG_OPMODE_RX );
-
+    connect = TRUE;
     // Опустошаем FIFO
 //    while( dioRead(DIO_RX_FIFONE) == SET ){
 //      rfmRegRead( REG_FIFO );

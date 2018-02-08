@@ -12,7 +12,11 @@
 #include "process.h"
 #include "main.h"
 
-//volatile uint32_t mTick;
+volatile uint32_t mTick;
+
+tRxPkt  rxPkt;
+tTxPkt  txPkt;
+tDev    dev;
 
 EEMEM tEeBackup eeBackup;     // Структура сохраняемых в EEPROM параметров
 //tEeBackup eeBackup;             // Структура сохраняемых в EEPROM параметров
@@ -73,10 +77,13 @@ int main(int argc, char* argv[])
 //  restoreContext();
   // Infinite loop
   while (1){
-//  	GPIOB->ODR ^= GPIO_Pin_3;
-//    wfiFaultCount++;
-    mDelay(1000);
+    uint32_t cmdTout;
 
+    while( connect ){
+      cmdTout
+    }
+    //    wfiFaultCount++;
+    mDelay(1000);
   }
   // Infinite loop, never return.
 }
@@ -98,8 +105,8 @@ static inline void sysClockInit(void){
   SysTick->CTRL &= ~( SysTick_CTRL_TICKINT_Msk ); // no systick interrupt
 
 //  // SysTick_IRQn interrupt configuration
-//  NVIC_EnableIRQ( SysTick_IRQn );
-//  NVIC_SetPriority(SysTick_IRQn, 0);
+  NVIC_EnableIRQ( SysTick_IRQn );
+  NVIC_SetPriority(SysTick_IRQn, 0);
 }
 
 static inline void pwrInit( void ){

@@ -276,7 +276,6 @@ typedef union {
   tSensMsg sensMsg;
 } __packed uPayload;
 
-
 typedef struct {
   uint8_t nodeAddr;       // Адрес получателя пакета
   uint8_t payLen;         // Длина пакета (payload)
@@ -293,6 +292,9 @@ typedef struct {
 
 //  uint8_t bufLen;       // Длина приемного буфера
 } __packed tPkt;
+
+
+
 
 extern tPkt pkt;
 extern tRfm  rfm;
