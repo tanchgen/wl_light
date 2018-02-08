@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
   // Infinite loop
   while (1){
 //  	GPIOB->ODR ^= GPIO_Pin_3;
-//    wfiFaultCount++;
+    wfiFaultCount++;
     mDelay(1000);
 
   }
