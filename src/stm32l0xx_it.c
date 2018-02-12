@@ -155,7 +155,7 @@ void EXTI0_1_IRQHandler(void)
 #endif // DEBUG_TIME
 
   // Выключаем RFM69
-//  rfmSetMode_s( REG_OPMODE_SLEEP );
+  rfmSetMode_s( REG_OPMODE_SLEEP );
 
 	// Сохраняем настройки портов
 	saveContext();
