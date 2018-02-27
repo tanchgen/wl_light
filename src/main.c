@@ -53,6 +53,8 @@ int main(int argc, char* argv[])
   (void)argc;
   (void)argv;
 
+  uint32_t msgNum = 0;
+
   mainInit();
   sysClockInit();
   // Разлочили EEPROM
@@ -62,7 +64,21 @@ int main(int argc, char* argv[])
   lightInit();
   rfmInit();
 
-  rfmSetMode_s( REG_OPMODE_RX );
+  // Выключаем прерывание DIO0 EXTI_IMR register
+  EXTI->IMR &= ~(DIO0_PIN);
+  // ----------- Configure NVIC for Extended Interrupt --------
+  NVIC_DisableIRQ( DIO0_EXTI_IRQn );
+  NVIC_DisableIRQ( DIO3_EXTI_IRQn );
+
+  pkt.paySensType = SENS_TYPE_LS;
+  pkt.paySrcNode = rfm.nodeAddr;
+  pkt.payBat = 0x9A;
+  pkt.payVolume = 0xA5A5;
+
+  // Передаем заполненую при измерении запись
+  pkt.nodeAddr = BCRT_ADDR;
+  // Длина payload = 1(nodeAddr) + 1(msgNum) + 1(bat) + 2(temp)
+  pkt.payLen = sizeof(tSensMsg);
 
 //  pwrInit();
 //  timeInit();
@@ -77,12 +93,11 @@ int main(int argc, char* argv[])
 //  restoreContext();
   // Infinite loop
   while (1){
-    uint32_t cmdTout;
-
-    while( connect ){
-      cmdTout
-    }
-    //    wfiFaultCount++;
+    pkt.payMsgNum = msgNum++;
+    rfmTransmit( &pkt );
+    while( dioRead(DIO_PAYL_RDY) == 0 )
+    {}
+    rfmSetMode_s( REG_OPMODE_FS );
     mDelay(1000);
   }
   // Infinite loop, never return.

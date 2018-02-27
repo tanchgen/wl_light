@@ -63,7 +63,7 @@
 #define CONCAT1( x )   (x ## _PIN)
 #define CONCAT2( x )   (x ## _PORT)
 
-#define dioRead( a )      ((CONCAT2( a )->IDR) & (CONCAT1( a )))? 1: 0
+#define dioRead( a )      (((CONCAT2( a )->IDR) & (CONCAT1( a )))? 1: 0)
 
 /* ------------------- Регистры параметров модуля ------------------------------------
  * Забугорные коллеги пишут, что есть 5 правил для выбора параметров в данном модуле.
@@ -221,7 +221,7 @@
 
 #define NET_ID            0x0101          // Идентификатор сети
 //#define CHANN_DEF         ((NET_ID % 8)+1)   // RF-канал по умолчанию
-#define CHANN_DEF         0x03   // RF-канал по умолчанию
+#define CHANN_DEF         0x07   // RF-канал по умолчанию
 #define NODE_ADDR         0xD1            // Собственный адрес нода по умолчанию
 #define BCRT_ADDR         0x00            // Адрес БКРТ-255
 #define BRDCAST_ADDR      0xFF            // Широковещательный адрес
