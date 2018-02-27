@@ -53,6 +53,8 @@ int main(int argc, char* argv[])
   (void)argc;
   (void)argv;
 
+  trace_printf("Hello, STM32L0!\n");
+
   mainInit();
   sysClockInit();
   // Разлочили EEPROM
@@ -77,11 +79,7 @@ int main(int argc, char* argv[])
 //  restoreContext();
   // Infinite loop
   while (1){
-    uint32_t cmdTout;
 
-    while( connect ){
-      cmdTout
-    }
     //    wfiFaultCount++;
     mDelay(1000);
   }

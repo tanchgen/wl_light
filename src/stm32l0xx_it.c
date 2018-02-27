@@ -15,13 +15,13 @@ uint8_t rssi;         // Мощность принимаемого радиос�
 
 //uint8_t txCpltCount = 0;
 
-//#if ! STOP_EN
-//uint8_t rtcLogCount;
-//struct {
-//  uint32_t ssr;
-//  eState state;
-//} rtcLog[64];
-//#endif
+uint8_t rxLogCount;
+struct {
+  uint8_t dest;
+  uint8_t src;
+  uint8_t msgNum;
+  uint8_t rcvNum;
+} rxLog[64];
 
 /* External variables --------------------------------------------------------*/
 
@@ -147,6 +147,17 @@ void EXTI0_1_IRQHandler(void)
     rssiVol = rfmRegRead( REG_RSSI_VAL );
     rfmReceive( &pkt );
     rfmRecvStop();
+    if( (pkt.nodeAddr == 210 ) || (pkt.paySrcNode == 210) ){
+      rxLog[rxLogCount].dest = pkt.nodeAddr;
+      rxLog[rxLogCount].src = pkt.paySrcNode;
+      rxLog[rxLogCount].msgNum = pkt.payBuf[2];
+      if(pkt.paySrcNode == 210){
+        rxLog[rxLogCount].rcvNum = pkt.payBuf[5];
+      }
+      ++rxLogCount;
+      rxLogCount &= 0x3F;   // Не более 63
+    }
+
     rfmSetMode_s( REG_OPMODE_RX );
     connect = TRUE;
     // Опустошаем FIFO

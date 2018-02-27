@@ -392,7 +392,8 @@ static inline void rfmRegSetup( void ){
 
   // Запись адреса нода - 0x22 и широковещательный адрес -0xFF
   rfmRegWrite( REG_NODE_ADDR, rfm.nodeAddr );
-  rfmRegWrite( REG_BRDCAST, BRDCAST_ADDR );
+//  rfmRegWrite( REG_BRDCAST, BRDCAST_ADDR );
+  rfmRegWrite( REG_BRDCAST, BCRT_ADDR );
 
   // Настройка пакета: Длина пакета - переменная, CRC - вкл, фильтрация адресов: адресс нода + широковещательный
   rfmRegWrite( REG_PACK_CFG, REG_PACK_CFG_VAR | REG_PACK_CFG_CRCON | REG_PACK_CFG_ADDRBRD);
