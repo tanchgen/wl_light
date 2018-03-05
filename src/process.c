@@ -20,6 +20,10 @@ tUxTime sendTryStopTime;
 static uint8_t msgNum;      // Порядковый номер отправляемого пакета
 extern uint8_t wutCount;
 
+#ifndef STM32L051
+static uint32_t rngGet( void );
+#endif
+
 static void sensDataSend( void );
 
 void mesureStart( void ){
@@ -160,7 +164,7 @@ void csmaRun( void ){
 // Устанавливааем паузу случайной длительности (30-150 мс) в прослушивании канала на предмет тишины
 void csmaPause( void ){
   uint32_t pause;
-#if 1
+#ifdef STM32L052xx
   SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENREF_RC48MHz;
   RCC->CRRCR |= RCC_CRRCR_HSI48ON;
   RCC->CCIPR |= RCC_CCIPR_HSI48MSEL;
@@ -183,7 +187,7 @@ void csmaPause( void ){
   RCC->CRRCR &= ~RCC_CRRCR_HSI48ON;
   SYSCFG->CFGR3 &= ~SYSCFG_CFGR3_ENREF_RC48MHz;
 #else
-  pause = 0x7FFFFFFF;
+  pause = rngGet();
 #endif
   // Длительность паузы
   pause = ((pause / (0xFFFFFFFFL/9)  ) + 1) * TX_DURAT * csmaCount;
@@ -217,3 +221,17 @@ void txEnd( void ){
   flags.batCplt = FALSE;
   state = STAT_READY;
 }
+
+#ifndef STM32L051
+static uint32_t rngGet( void ){
+  uint32_t rand0;
+  uint8_t b;
+  uint32_t k;
+
+  rand0 = (getRtcTime() << 16) + rtc.ss;
+  k = 1220703125;              // Множитель (простое число)
+  b = 7;                          // Приращение (простое число)
+  rand0 = ( k * rand0 + b );
+  return rand0;
+}
+#endif

@@ -11,6 +11,8 @@
 #include "gpio.h"
 #include "my_time.h"
 
+#include "node_addr.h"
+
 // Определения для входов DIO_RFM
 #ifndef __packed
 #define __packed __attribute__((packed))
@@ -39,17 +41,17 @@
 #define DIO3_PORT_NUM   0
 #define DIO3_EXTI_IRQn  EXTI2_3_IRQn
 
-#define DIO4_PIN        GPIO_Pin_6
-#define DIO4_PIN_NUM    6
-#define DIO4_PORT       GPIOA
+#define DIO4_PIN        GPIO_Pin_4
+#define DIO4_PIN_NUM    4
+#define DIO4_PORT       GPIOB
 
-#define DIO5_PIN        GPIO_Pin_2
-#define DIO5_PIN_NUM    2
+#define DIO5_PIN        GPIO_Pin_5
+#define DIO5_PIN_NUM    5
 #define DIO5_PORT       GPIOB
 
 // Определения для вывода Reset модуля
-#define RFM_RST_PIN      GPIO_Pin_8
-#define RFM_RST_PIN_NUM  8
+#define RFM_RST_PIN      GPIO_Pin_3
+#define RFM_RST_PIN_NUM  3
 #define RFM_RST_PORT     GPIOB
 
 // Выводы по назначению
@@ -218,13 +220,6 @@
 #define CHANN8_MAX            7
 
 
-
-#define NET_ID            0x0101          // Идентификатор сети
-//#define CHANN_DEF         ((NET_ID % 8)+1)   // RF-канал по умолчанию
-#define CHANN_DEF         0x03   // RF-канал по умолчанию
-#define NODE_ADDR         0xD1            // Собственный адрес нода по умолчанию
-#define BCRT_ADDR         0x00            // Адрес БКРТ-255
-#define BRDCAST_ADDR      0xFF            // Широковещательный адрес
 
 // Режим работы модуля
 enum {

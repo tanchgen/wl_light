@@ -14,6 +14,7 @@
 void rfmFreqSet( uint32_t freq );
 
 tRfm  rfm;
+// uint8_t regBuf[81];     // Регистры RFM69
 tPkt pkt;            // Структура принятого пакета
 //extern uint8_t tmpVal;
 
@@ -276,18 +277,19 @@ static inline void dioInit( void ){
 
   //---- Инициализация выводов для DIO0 - DIO5 RFM69: вход, 2МГц, без подтяжки
 
-  //Dio0 - PA0, Dio1 - PA1, Dio2 - PA2, Dio3 - PA3, Dio4 - PA6
-  GPIOA->OTYPER &= ~(GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_6);
-  GPIOA->OSPEEDR = (GPIOA->OSPEEDR & ~(0x3 | (0x3 << (1 * 2)) | (0x3 << (2 * 2)) | (0x3 << (3 * 2)) | (0x3 << (6 * 2)) )) |
-        (0x1 | (0x1 << (1 * 2)) | (0x1 << (2 * 2)) | (0x1 << (3 * 2)) | (0x1 << (6 * 2)) );
-  GPIOA->PUPDR &= ~(0x3 | (0x3 << (1 * 2)) | (0x3 << (2 * 2)) | (0x3 << (3 * 2)) | (0x3 << (6 * 2)) );
-  GPIOA->MODER &= ~(0x3 | (0x3 << (1 * 2)) | (0x3 << (2 * 2)) | (0x3 << (3 * 2)) | (0x3 << (6 * 2)) );
+  //Dio0 - PA0, Dio1 - PA1, Dio2 - PA2, Dio3 - PA3
+  GPIOA->OTYPER &= ~(GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
+  GPIOA->OSPEEDR = (GPIOA->OSPEEDR & ~(0x3 | (0x3 << (1 * 2)) | (0x3 << (2 * 2)) | (0x3 << (3 * 2)) )) | \
+        (0x1 | (0x1 << (1 * 2)) | (0x1 << (2 * 2)) | (0x1 << (3 * 2)) );
+  GPIOA->PUPDR &= ~(0x3 | (0x3 << (1 * 2)) | (0x3 << (2 * 2)) | (0x3 << (3 * 2)) );
+  GPIOA->MODER &= ~(0x3 | (0x3 << (1 * 2)) | (0x3 << (2 * 2)) | (0x3 << (3 * 2)) );
 
-  // Dio5 - PB2
-  GPIOB->OTYPER &= ~(GPIO_Pin_2);
-  GPIOB->OSPEEDR = (GPIOB->OSPEEDR & ~(0x3 << (2 * 2))) | (0x1 << (2 * 2));
-  GPIOB->PUPDR &= ~(0x3 << (2 * 2));
-  GPIOB->MODER &= ~(0x3 << (2 * 2));
+  // Dio4 - PB4, Dio5 - PB5
+  GPIOB->OTYPER &= ~(GPIO_Pin_4 | GPIO_Pin_5);
+  GPIOB->OSPEEDR = (GPIOB->OSPEEDR & ~((0x3 << (4 * 2)) | (0x3 << (5 * 2)) ) ) | \
+        ( (0x1 << (4 * 2)) | (0x1 << (5 * 2)) );
+  GPIOB->PUPDR &= ~( (0x3 << (4 * 2)) | (0x3 << (5 * 2)) );
+  GPIOB->MODER &= ~((0x3 << (4 * 2)) | (0x3 << (5 * 2)) );
 
   // Инициализация прерывания от DIO0 и DI03
   // Select Dio0-Port for Dio0-Pin extended interrupt by writing 0000 in EXTI0
@@ -351,35 +353,18 @@ static inline void rfmRegSetup( void ){
   rfmRegWrite( REG_DIO_MAP2, 0x77 );
 
 // -------------- Bitrate ------------------------
-#if 1
-  // Настройка bitrate
-  rfmRegWrite( REG_BR_MSB, 0x0D );   	// 9600 bit/s
-  rfmRegWrite( REG_BR_LSB, 0x05 );   	//
+  rfmRegWrite( REG_BR_MSB, 0x05 );    // 25000 bit/s
+  rfmRegWrite( REG_BR_LSB, 0x00 );    //
   // Настройка девиации частоты
-  rfmRegWrite( REG_FDEV_MSB, 0x00 );
-  rfmRegWrite( REG_FDEV_LSB, 0x76 );  // 7200 Hz
+  rfmRegWrite( REG_FDEV_MSB, 0x01 );
+  rfmRegWrite( REG_FDEV_LSB, 0x3F );  // 19470 Hz
   // Настройка BW-фильтра
-  rfmRegWrite( REG_RX_BW, 0x4D );			// 12500 Hz
+  rfmRegWrite( REG_RX_BW, 0x44 );     // 31300 Hz
   // Настройка AFC Bw
-  rfmRegWrite( REG_AFC_BW, 0x8C );		// 25000 Hz
-#else
-  // Настройка bitrate
-  rfmRegWrite( REG_BR_MSB, 0x1A );   // Default
-  rfmRegWrite( REG_BR_LSB, 0x0B );   // Default
-//  rfmRegWrite( REG_BR_MSB, RF_BR_MSB ); 
-//  rfmRegWrite( REG_BR_LSB, RF_BR_LSB );
-  // Настройка девиации частоты
-  rfmRegWrite( REG_FDEV_MSB, 0x00 );
-  rfmRegWrite( REG_FDEV_LSB, 0x52 );   // Default
-  // Настройка BW-фильтра
-  rfmRegWrite( REG_RX_BW, 0x55 );   // Default
-  // Настройка AFC Bw
-  rfmRegWrite( REG_AFC_BW, 0x8B );
-#endif
+  rfmRegWrite( REG_AFC_BW, 0x8A );    // 100000 Hz
 
   // Установка частоты несущей
   rfmChannelSet( rfm.channel );
- // rfmRegWrite( REG_AFCFEI, REG_AFCFEI_AFC_AUTO );
   // Настройка усилителя приемника: Вх. = 200 Ом, Усиление - AGC
   rfmRegWrite( REG_LNA, 0x80 );
 
@@ -398,9 +383,9 @@ static inline void rfmRegSetup( void ){
   rfmRegWrite( REG_PACK_CFG, REG_PACK_CFG_VAR | REG_PACK_CFG_CRCON | REG_PACK_CFG_ADDRBRD);
 
   // Настройка минимальной рабочей границы  RSSI ( -114дБ )
-  // rfmRegWrite( REG_RSSI_THRESH, 0xE4 );
-  // Настройка минимальной рабочей границы  RSSI ( -108дБ )
-  rfmRegWrite( REG_RSSI_THRESH, 0xD8 );
+  rfmRegWrite( REG_RSSI_THRESH, 0xE4 );
+  // Настройка минимальной рабочей границы  RSSI ( -90дБ )
+  // rfmRegWrite( REG_RSSI_THRESH, 0xB4 );
 
   // Передача начинается сразу по условию: В FIFO есть данные и установлен TX-режим
   rfmRegWrite( REG_FIFO_THRESH, 0x8F );

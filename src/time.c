@@ -27,9 +27,9 @@ struct {
 } wutTest[20];
 
 static void RTC_SetTime( volatile tRtc * prtc );
-static void RTC_GetTime( volatile tRtc * prtc );
 static void RTC_SetDate( volatile tRtc * prtc );
-static void RTC_GetDate( volatile tRtc * prtc );
+//static void RTC_GetTime( volatile tRtc * prtc );
+//static void RTC_GetDate( volatile tRtc * prtc );
 static void RTC_SetAlrm( tRtc * prtc, uint8_t alrm );
 static void RTC_GetAlrm( tRtc * prtc, uint8_t alrm );
 static void RTC_CorrAlrm( tRtc * prtc, uint8_t alrm );
@@ -392,27 +392,27 @@ static void RTC_SetDate( volatile tRtc * prtc ){
   RTC->WPR = 0x64;
 }
 
-static void RTC_GetTime( volatile tRtc * prtc ){
-  // Пежде чем читать необходимо убедится, что флаг RTC_ISR_RSF установлен !
-  while((RTC->ISR & RTC_ISR_RSF) == 0)
-  {}
-  uint32_t tmp = RTC->TR;
-  prtc->hour = BCD2BIN( tmp >> RTC_POSITION_TR_HU );
-  prtc->min = BCD2BIN( tmp >> RTC_POSITION_TR_MU );
-  prtc->sec = BCD2BIN( tmp );
-  prtc->ss = RTC->SSR;
-}
-
-static void RTC_GetDate( volatile tRtc * prtc ){
-  // Пежде чем читать необходимо убедится, что флаг RTC_ISR_RSF установлен !
-  while((RTC->ISR & RTC_ISR_RSF) == 0)
-  {}
-  uint32_t tmp = RTC->DR;
-  prtc->year = BCD2BIN( tmp >> RTC_POSITION_DR_YU );
-  prtc->month = BCD2BIN( (tmp >> RTC_POSITION_DR_MU) & 0x1f );
-  prtc->date = BCD2BIN( tmp );
-  prtc->wday = ( tmp >> RTC_POSITION_DR_WDU ) & 0x7;
-}
+//static void RTC_GetTime( volatile tRtc * prtc ){
+//  // Пежде чем читать необходимо убедится, что флаг RTC_ISR_RSF установлен !
+//  while((RTC->ISR & RTC_ISR_RSF) == 0)
+//  {}
+//  uint32_t tmp = RTC->TR;
+//  prtc->hour = BCD2BIN( tmp >> RTC_POSITION_TR_HU );
+//  prtc->min = BCD2BIN( tmp >> RTC_POSITION_TR_MU );
+//  prtc->sec = BCD2BIN( tmp );
+//  prtc->ss = RTC->SSR;
+//}
+//
+//static void RTC_GetDate( volatile tRtc * prtc ){
+//  // Пежде чем читать необходимо убедится, что флаг RTC_ISR_RSF установлен !
+//  while((RTC->ISR & RTC_ISR_RSF) == 0)
+//  {}
+//  uint32_t tmp = RTC->DR;
+//  prtc->year = BCD2BIN( tmp >> RTC_POSITION_DR_YU );
+//  prtc->month = BCD2BIN( (tmp >> RTC_POSITION_DR_MU) & 0x1f );
+//  prtc->date = BCD2BIN( tmp );
+//  prtc->wday = ( tmp >> RTC_POSITION_DR_WDU ) & 0x7;
+//}
 
 static void RTC_SetAlrm( tRtc * prtc, uint8_t alrm ){
   register uint32_t temp = 0U;
