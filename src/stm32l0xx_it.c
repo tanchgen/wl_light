@@ -147,11 +147,11 @@ void EXTI0_1_IRQHandler(void)
     rssiVol = rfmRegRead( REG_RSSI_VAL );
     rfmReceive( &pkt );
     rfmRecvStop();
-    if( (pkt.nodeAddr == 210 ) || (pkt.paySrcNode == 210) ){
+    if( (pkt.nodeAddr == NODE_ADDR ) || (pkt.paySrcNode == NODE_ADDR) ){
       rxLog[rxLogCount].dest = pkt.nodeAddr;
       rxLog[rxLogCount].src = pkt.paySrcNode;
       rxLog[rxLogCount].msgNum = pkt.payBuf[2];
-      if(pkt.paySrcNode == 210){
+      if(pkt.paySrcNode == NODE_ADDR){
         rxLog[rxLogCount].rcvNum = pkt.payBuf[5];
       }
       ++rxLogCount;

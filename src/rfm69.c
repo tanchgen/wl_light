@@ -315,24 +315,22 @@ static inline void rfDataInit( void ){
   // Инициализация структуры Rfm
   rfm.mode = MODE_STDBY;
   // Считываем из EEPROM параметры
-  if( (tmp = eeBackup.rfmNetId) == 0){
+  if( eeBackup.rfmNetId == 0){
     // В еепром ничего не записанно
-    rfm.netId = eeBackup.rfmNetId = NET_ID;
-    rfm.channel = eeBackup.rfmChannel = CHANN_DEF;
-    rfm.nodeAddr = eeBackup.rfmNodeAddr = NODE_ADDR;
-    rfm.txPwr = eeBackup.rfmTxPwr = TX_PWR_10;
+    eeBackup.rfmNetId = NET_ID;
+    eeBackup.rfmChannel = CHANN_DEF;
+    eeBackup.rfmNodeAddr = NODE_ADDR;
+    eeBackup.rfmTxPwr = TX_PWR_10;
   }
-  else {
-    rfm.netId = tmp;
-    rfm.nodeAddr = eeBackup.rfmNodeAddr;
-    rfm.channel = eeBackup.rfmChannel;
-    rfm.txPwr = ((tmp=eeBackup.rfmTxPwr) > TX_PWR_10)? TX_PWR_10 : tmp;
-  }
+  rfm.netId = eeBackup.rfmNetId;
+  rfm.nodeAddr = eeBackup.rfmNodeAddr;
+  rfm.channel = eeBackup.rfmChannel;
+  rfm.txPwr = ((tmp=eeBackup.rfmTxPwr) > TX_PWR_10)? TX_PWR_10 : tmp;
 }
 
 static inline void rfmRegSetup( void ){
   //  Усыпляем радиомодуль
-  rfmRegWrite( REG_OPMODE,  REG_OPMODE_SLEEP );
+  rfmRegWrite( REG_OPMODE,  REG_OPMODE_STDBY );
   while( (rfmRegRead(REG_FLAG1) & REG_IF1_MODEREADY) != REG_IF1_MODEREADY)
   {}
 
@@ -392,6 +390,7 @@ static inline void rfmRegSetup( void ){
 
   // Запись адреса нода - 0x22 и широковещательный адрес -0xFF
   rfmRegWrite( REG_NODE_ADDR, rfm.nodeAddr );
+//  rfmRegWrite( REG_NODE_ADDR, BCRT_ADDR );
 //  rfmRegWrite( REG_BRDCAST, BRDCAST_ADDR );
   rfmRegWrite( REG_BRDCAST, BCRT_ADDR );
 

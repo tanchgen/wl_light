@@ -32,7 +32,7 @@ uint32_t GPIOA_MODER;
 uint32_t GPIOB_MODER;
 uint32_t GPIOC_MODER;
 
-//extern uint8_t regBuf[];
+uint8_t regBuf[0x40];
 
 #if DEBUG_TIME
 
@@ -53,8 +53,6 @@ int main(int argc, char* argv[])
   (void)argc;
   (void)argv;
 
-  trace_printf("Hello, STM32L0!\n");
-
   mainInit();
   sysClockInit();
   // Разлочили EEPROM
@@ -64,7 +62,6 @@ int main(int argc, char* argv[])
   lightInit();
   rfmInit();
 
-  rfmSetMode_s( REG_OPMODE_RX );
 
 //  pwrInit();
 //  timeInit();
@@ -75,6 +72,11 @@ int main(int argc, char* argv[])
 #if STOP_EN
   __WFI();
 #endif
+  // !!! Дебажим  регистры !!!
+  for( uint8_t i = 1; i < 0x40; i++ ){
+    regBuf[i] = rfmRegRead( i );
+  }
+  rfmSetMode_s( REG_OPMODE_RX );
 
 //  restoreContext();
   // Infinite loop
