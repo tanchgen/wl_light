@@ -58,8 +58,6 @@ int main(int argc, char* argv[])
   lightInit();
   rfmInit();
 
-  rfmSetMode_s( REG_OPMODE_RX );
-
   pwrInit();
   timeInit();
   // Запустили измерения
