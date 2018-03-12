@@ -124,8 +124,6 @@ int8_t dataSendTry( void ){
         sensData.volumePrev6 = sensData.volume;
       }
       // Можно отправлять по радиоканалу
-      // Запоминаем время остановки попыток отправки - пробуем не более 1-2 секунды
-      sendTryStopTime = getRtcTime() + 1;
       csmaRun();
     }
     else {

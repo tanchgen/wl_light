@@ -72,9 +72,10 @@ int main(int argc, char* argv[])
   // Infinite loop
   while (1){
 //  	GPIOB->ODR ^= GPIO_Pin_3;
+#if STOP_EN
     wfiFaultCount++;
+#endif
     mDelay(1000);
-
   }
   // Infinite loop, never return.
 }

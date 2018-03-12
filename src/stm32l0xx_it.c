@@ -190,8 +190,7 @@ void EXTI2_3_IRQHandler( void ){
 #endif // DEBUG_TIME
 
   // Канал занят - Выжидаем паузу 30мс + x * 20мс
-  timeNow = getRtcTime();
-  if( (csmaCount >= CSMA_COUNT_MAX) || (timeNow > sendTryStopTime) ){
+  if( csmaCount >= CSMA_COUNT_MAX ){
     // Количество попыток и время на попытки отправить данные вышло - все бросаем до следующего раза
   	csmaCount = 0;
     txEnd();
