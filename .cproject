@@ -81,6 +81,7 @@
 									<listOptionValue builtIn="false" value="USE_FULL_LL_DRIVER"/>
 									<listOptionValue builtIn="false" value="STM32L051xx"/>
 								</option>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.verbose.386579425" name="Verbose (-v)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.verbose" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1394728786" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.762351357" name="Cross ARM GNU C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler">

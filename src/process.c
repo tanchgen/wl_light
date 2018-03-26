@@ -127,9 +127,9 @@ int8_t dataSendTry( void ){
         sendToutFlag = RESET;
         sensData.volumePrev6 = sensData.volume;
       }
+      // Обнуляем счетчик попыток
+      csmaCount = 0;
       // Можно отправлять по радиоканалу
-      // Запоминаем время остановки попыток отправки - пробуем не более 1-2 секунды
-      sendTryStopTime = getRtcTime() + 1;
       csmaRun();
     }
     else {
@@ -164,31 +164,7 @@ void csmaRun( void ){
 // Устанавливааем паузу случайной длительности (30-150 мс) в прослушивании канала на предмет тишины
 void csmaPause( void ){
   uint32_t pause;
-#ifdef STM32L052xx
-  SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENREF_RC48MHz;
-  RCC->CRRCR |= RCC_CRRCR_HSI48ON;
-  RCC->CCIPR |= RCC_CCIPR_HSI48MSEL;
-  while( (RCC->CRRCR & RCC_CRRCR_HSI48RDY) == RESET )
-  {}
-  // Включаем генератор случайных чисел
-  RCC->AHBENR |= RCC_AHBENR_RNGEN;
-  RNG->CR |= RNG_CR_RNGEN;
-  // Ждем готовности числа (~ 46 тактов)
-  while( ((RNG->SR & RNG_SR_DRDY) == 0 ) &&
-          ((RNG->SR & RNG_SR_CEIS) == 0 ) &&
-          ((RNG->SR & RNG_SR_SEIS) == 0) ){
-  }
-  // Число RND готово или ошибка (тогда RND = 0)
-  pause = RNG->DR;
-  // Выключаем
-  RNG->CR &= ~RNG_CR_RNGEN;
-  RCC->AHBENR &= ~RCC_AHBENR_RNGEN;
-  RCC->CCIPR &= ~RCC_CCIPR_HSI48MSEL;
-  RCC->CRRCR &= ~RCC_CRRCR_HSI48ON;
-  SYSCFG->CFGR3 &= ~SYSCFG_CFGR3_ENREF_RC48MHz;
-#else
   pause = rngGet();
-#endif
   // Длительность паузы
   pause = ((pause / (0xFFFFFFFFL/9)  ) + 1) * TX_DURAT * csmaCount;
   state = STAT_RF_CSMA_PAUSE;

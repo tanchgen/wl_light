@@ -166,13 +166,6 @@ void EXTI0_1_IRQHandler(void)
 // Прерывание по PA3 - DIO3 RSSI
 // Канал кем-то занят
 void EXTI2_3_IRQHandler( void ){
-  tUxTime timeNow;
-//#if ! STOP_EN
-//  rtcLog[rtcLogCount].ssr = RTC->SSR;
-//  rtcLog[rtcLogCount++].state = state;
-//  rtcLogCount &= 0x3F;
-//#endif
-
   // Восстанавливаем настройки портов
   restoreContext();
   wutStop();
@@ -184,16 +177,13 @@ void EXTI2_3_IRQHandler( void ){
   rssiVol = rfmRegRead( REG_RSSI_VAL );
   rfmSetMode_s( REG_OPMODE_SLEEP );
 
-  // Отмечаем останов RFM_RX
 #if DEBUG_TIME
+  // Отмечаем останов RFM_RX
 	dbgTime.rfmRxEnd = mTick;
 #endif // DEBUG_TIME
 
-  // Канал занят - Выжидаем паузу 30мс + x * 20мс
-  timeNow = getRtcTime();
-  if( (csmaCount >= CSMA_COUNT_MAX) || (timeNow > sendTryStopTime) ){
+  if( (csmaCount >= CSMA_COUNT_MAX) ){
     // Количество попыток и время на попытки отправить данные вышло - все бросаем до следующего раза
-  	csmaCount = 0;
     txEnd();
   }
   else {
