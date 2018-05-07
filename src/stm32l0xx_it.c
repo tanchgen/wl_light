@@ -87,11 +87,11 @@ void RTC_IRQHandler(void){
     //Clear ALRAF
     RTC->ISR &= ~RTC_ISR_ALRAF;
     if( (tmp & 0x1) != 0){
+      // Alarm A interrupt: Каждая вторая секунда
+      uxTime = getRtcTime();
       if((rtc.min % SEND_TOUT) != 0) {
         sendToutFlag = SET;
       }
-      // Alarm A interrupt: Каждая вторая секунда
-      uxTime = getRtcTime();
       if(state == STAT_READY){
         if( sendToutFlag == SET ){
           // Периодическое измерение - измеряем все

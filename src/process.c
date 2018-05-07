@@ -22,6 +22,10 @@ extern uint8_t wutCount;
 
 static void sensDataSend( void );
 
+#ifndef STM32L052xx
+static uint32_t rngGet( void );
+#endif
+
 void mesureStart( void ){
   // Запускаем измерение напряжения батареи
   batStart();
@@ -158,7 +162,7 @@ void csmaRun( void ){
 // Устанавливааем паузу случайной длительности (30-150 мс) в прослушивании канала на предмет тишины
 void csmaPause( void ){
   uint32_t pause;
-#if 1
+#ifdef STM32L052xx
   SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENREF_RC48MHz;
   RCC->CRRCR |= RCC_CRRCR_HSI48ON;
   RCC->CCIPR |= RCC_CCIPR_HSI48MSEL;
@@ -215,3 +219,17 @@ void txEnd( void ){
   flags.batCplt = FALSE;
   state = STAT_READY;
 }
+
+#ifndef STM32L052xx
+static uint32_t rngGet( void ){
+  uint32_t rand0;
+  uint8_t b;
+  uint32_t k;
+
+  rand0 = (getRtcTime() << 16) + rtc.ss;
+  k = 1220703125;              // Множитель (простое число)
+  b = 7;                          // Приращение (простое число)
+  rand0 = ( k * rand0 + b );
+  return rand0;
+}
+#endif

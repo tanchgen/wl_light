@@ -40,6 +40,8 @@ void rtcInit(void){
   PWR->CR |= PWR_CR_DBP;
   RCC->CSR |= RCC_CSR_RTCRST;
   RCC->CSR &= ~RCC_CSR_RTCRST;
+
+  RCC->CSR |= RCC_CSR_LSEDRV_1;
   // Enable the LSE
   RCC->CSR |= RCC_CSR_LSEON;
   // Wait while it is not ready
