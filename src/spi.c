@@ -63,7 +63,9 @@ void spiInit(void) {
 
 // Передача по SPI в блокирующем режима
 int8_t spiTrans_s( uint8_t *buf, uint8_t len ){
+  uint8_t txCount = len;
   uint32_t tout;
+  uint8_t nullrx;
 
   // 	Таймаут ~10мс или около того...
   tout = 20000;
@@ -73,8 +75,13 @@ int8_t spiTrans_s( uint8_t *buf, uint8_t len ){
   SPI1->CR1 |= SPI_CR1_SPE;
   // Отправка из буфера tx в буфер SPI
   while( len ){
-    if( ((SPI1->SR & SPI_SR_TXE) != 0 )){
-      *(uint8_t *)&(SPI1->DR) = *buf++;
+    if( txCount && ((SPI2->SR & SPI_SR_TXE) != 0) ){
+      *(uint8_t *)&(SPI2->DR) = *buf++;
+      txCount--;
+    }
+    if( (SPI2->SR & SPI_SR_RXNE) != 0 ){
+      nullrx = (uint8_t)(SPI2->DR);
+      (void)nullrx;
       len--;
     }
     if( --tout == 0){
