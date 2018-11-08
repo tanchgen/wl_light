@@ -335,6 +335,7 @@ static inline void rfmRegSetup( void ){
   rfmRegWrite( REG_OPMODE,  REG_OPMODE_SLEEP );
   while( (rfmRegRead(REG_FLAG1) & REG_IF1_MODEREADY) != REG_IF1_MODEREADY)
   {}
+  rfm.mode = MODE_SLEEP;
 
   // Калибровка RC-генратора
   rfmRcCal();
@@ -350,38 +351,24 @@ static inline void rfmRegSetup( void ){
   rfmRegWrite( REG_DIO_MAP1, 0x11 );
   rfmRegWrite( REG_DIO_MAP2, 0x77 );
 
-// -------------- Bitrate ------------------------
-#if 1
-  // Настройка bitrate
-  rfmRegWrite( REG_BR_MSB, 0x0D );   	// 9600 bit/s
-  rfmRegWrite( REG_BR_LSB, 0x05 );   	//
-  // Настройка девиации частоты
-  rfmRegWrite( REG_FDEV_MSB, 0x00 );
-  rfmRegWrite( REG_FDEV_LSB, 0x76 );  // 7200 Hz
-  // Настройка BW-фильтра
-  rfmRegWrite( REG_RX_BW, 0x4D );			// 12500 Hz
-  // Настройка AFC Bw
-  rfmRegWrite( REG_AFC_BW, 0x8C );		// 25000 Hz
-#else
-  // Настройка bitrate
-  rfmRegWrite( REG_BR_MSB, 0x1A );   // Default
-  rfmRegWrite( REG_BR_LSB, 0x0B );   // Default
-//  rfmRegWrite( REG_BR_MSB, RF_BR_MSB ); 
-//  rfmRegWrite( REG_BR_LSB, RF_BR_LSB );
-  // Настройка девиации частоты
-  rfmRegWrite( REG_FDEV_MSB, 0x00 );
-  rfmRegWrite( REG_FDEV_LSB, 0x52 );   // Default
-  // Настройка BW-фильтра
-  rfmRegWrite( REG_RX_BW, 0x55 );   // Default
-  // Настройка AFC Bw
-  rfmRegWrite( REG_AFC_BW, 0x8B );
-#endif
+  // -------------- Bitrate ------------------------
+    rfmRegWrite( REG_BR_MSB, 0x05 );    // 25000 bit/s
+    rfmRegWrite( REG_BR_LSB, 0x00 );    //
+    // Настройка девиации частоты
+    rfmRegWrite( REG_FDEV_MSB, 0x01 );
+    rfmRegWrite( REG_FDEV_LSB, 0x3F );  // 19470 Hz
+    // Настройка BW-фильтра
+    rfmRegWrite( REG_RX_BW, 0x44 );     // 31300 Hz
+    // Настройка AFC Bw
+    rfmRegWrite( REG_AFC_BW, 0x8A );    // 100000 Hz
 
-  // Установка частоты несущей
-  rfmChannelSet( rfm.channel );
- // rfmRegWrite( REG_AFCFEI, REG_AFCFEI_AFC_AUTO );
-  // Настройка усилителя приемника: Вх. = 200 Ом, Усиление - AGC
-  rfmRegWrite( REG_LNA, 0x80 );
+    // rfmRegWrite( REG_AFCFEI, REG_AFCFEI_AFC_AUTO );
+
+    // Установка частоты несущей
+    rfmChannelSet( rfm.channel );
+    // Настройка усилителя приемника: Вх. = 200 Ом, Усиление - AGC
+    rfmRegWrite( REG_LNA, 0x80 );
+
 
   // Настройка усилителя передатчика PA0 - выкл, PA1 - вкл.  Мощность - +10 дБм: (-18 + 28)
   rfmRegWrite( REG_PA_LVL, 0x40 | (TX_PWR_10) );
@@ -399,8 +386,8 @@ static inline void rfmRegSetup( void ){
 
   // Настройка минимальной рабочей границы  RSSI ( -114дБ )
   // rfmRegWrite( REG_RSSI_THRESH, 0xE4 );
-  // Настройка минимальной рабочей границы  RSSI ( -108дБ )
-  rfmRegWrite( REG_RSSI_THRESH, 0xD8 );
+  // Настройка минимальной рабочей границы  RSSI ( -96дБ )
+  rfmRegWrite( REG_RSSI_THRESH, 0xC0 );
 
   // Передача начинается сразу по условию: В FIFO есть данные и установлен TX-режим
   rfmRegWrite( REG_FIFO_THRESH, 0x8F );
